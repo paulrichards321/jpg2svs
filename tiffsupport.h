@@ -40,15 +40,18 @@ public:
   bool createFile(const std::string& newFilename);
   bool setThumbNail();
   void close() { if (mtif) { TIFFClose(mtif); mtif=0; } } 
-	bool setTileAttributes(int newSamplesPerPixel, int newBitsPerSample, int newImageWidth, int newImageHeight, int newTileWidth, int newTileHeight, int newTileDepth, int quality, std::string& strAttributes);
+	bool setAttributes(int newSamplesPerPixel, int newBitsPerSample, int newImageWidth, int newImageHeight, int newTileWidth, int newTileHeight, int newTileDepth, int quality);
+  bool setDescription(std::string& strAttributes, int baseWidth, int baseHeight);
   bool writeDirectory();
   bool writeEncodedTile(BYTE* buff, int x, int y, int z);
-  Tiff() { mtif=0; }
+  bool writeImage(BYTE* buff);
+  Tiff() { mtif=0; mquality=70; }
 	~Tiff() { }
 	static bool testHeader(BYTE*, int);
 protected:
   TIFFLIB::TIFF* mtif;
   int mtileWidth, mtileHeight;
+  int mquality;
 };
 
 #endif

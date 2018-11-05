@@ -1,4 +1,4 @@
-all: jpg2svs
+all: jpg2svs svsinfo
 .PHONY: all
 
 CXX=g++
@@ -9,6 +9,8 @@ SLIDE_LFLAGS=-ljpeg -ltiff $(OPENCV_LFLAGS) -L/usr/lib
 
 CONV_OBJECTS=jpg2svs.o jpgcachesupport.o imagesupport.o jpgsupport.o tiffsupport.o composite.o console-mswin.o
 
+INFO_OBJECTS=imagesupport.o jpgsupport.o tiffsupport.o svsinfo.o
+
 .cpp.o:
 	$(CXX) -c -g -I/usr/include $(SLIDE_CFLAGS) $<
 
@@ -16,3 +18,6 @@ jpg2svs: $(CONV_OBJECTS)
 	$(CXX) -g -o jpg2svs -pthread $(CONV_OBJECTS) \
   	$(SLIDE_LFLAGS) 
 
+svsinfo: $(INFO_OBJECTS)
+	$(CXX) -g -o svsinfo -pthread $(INFO_OBJECTS) \
+	  $(SLIDE_LFLAGS)

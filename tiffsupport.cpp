@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <cstdio>
 #include <cstring>
+#include <sstream>
 #include <memory>
 #include <stdexcept>
 #include "imagesupport.h"
@@ -68,6 +69,27 @@ bool Tiff::writeEncodedTile(BYTE* buff, int x, int y, int z)
 }
 
 
+bool Tiff::writeImage(BYTE* buff)
+{
+  if (mtif)
+  {
+    tsize_t stripSize = mactualWidth*mactualHeight*msamplesPerPixel;
+    TIFFSetField(mtif, TIFFTAG_ROWSPERSTRIP, mactualHeight);
+    tsize_t wroteSize = TIFFWriteEncodedStrip(mtif, 0, (void*) buff, stripSize);
+    if (stripSize == wroteSize)
+    {
+      return true;
+    }
+    else
+    {
+      return false;
+    }
+  }
+  return false;
+}
+
+
+
 bool Tiff::writeDirectory()
 {
   if (mtif)
@@ -78,7 +100,7 @@ bool Tiff::writeDirectory()
 }
 
 
-bool Tiff::setTileAttributes(int newSamplesPerPixel, int newBitsPerSample, int newImageWidth, int newImageHeight, int newTileWidth, int newTileHeight, int newTileDepth, int quality, std::string& strAttributes)
+bool Tiff::setAttributes(int newSamplesPerPixel, int newBitsPerSample, int newImageWidth, int newImageHeight, int newTileWidth, int newTileHeight, int newTileDepth, int quality)
 {
   mactualWidth = newImageWidth;
   mactualHeight = newImageHeight;
@@ -86,6 +108,7 @@ bool Tiff::setTileAttributes(int newSamplesPerPixel, int newBitsPerSample, int n
   mtileHeight = newTileHeight;
   mbitCount = newBitsPerSample;
   msamplesPerPixel = newSamplesPerPixel;
+  mquality = quality;
   uint32 u32TifImageWidth = (uint32) newImageWidth;
   uint32 u32TifImageLength = (uint32) newImageHeight;
   uint32 u32TileWidth = (uint32) newTileWidth;
@@ -119,7 +142,6 @@ bool Tiff::setTileAttributes(int newSamplesPerPixel, int newBitsPerSample, int n
       TIFFSetField(mtif, TIFFTAG_COMPRESSION, COMPRESSION_JPEG);
       TIFFSetField(mtif, TIFFTAG_JPEGQUALITY, quality);    
       TIFFSetField(mtif, TIFFTAG_JPEGCOLORMODE, JPEGCOLORMODE_RGB);
-      TIFFSetField(mtif, TIFFTAG_IMAGEDESCRIPTION, strAttributes.c_str());
     }
     catch (std::bad_alloc) 
     {
@@ -144,6 +166,26 @@ bool Tiff::setTileAttributes(int newSamplesPerPixel, int newBitsPerSample, int n
 }
 
 
+bool Tiff::setDescription(std::string& strAttributes, int baseWidth, int baseHeight)
+{
+  std::ostringstream oss;
+  int retval=0;
+  if (mtif)
+  {
+    oss << strAttributes << "\r\n";
+    oss << baseWidth << "x" << baseHeight << " ";
+    if (mtileWidth > 0 && mtileHeight > 0)
+    {
+      oss << "(" << mtileWidth << "x" << mtileHeight << ") ";
+    }
+    oss << "-> " << mactualWidth << "x" << mactualHeight << " JPEG/RGB Q=" << mquality;
+    std::string attr = oss.str();
+    retval=TIFFSetField(mtif, TIFFTAG_IMAGEDESCRIPTION, attr.c_str());
+  }
+  return (retval == 1 ? true : false);
+}
+
+
 bool Tiff::setThumbNail()
 {
   if (mtif)
@@ -161,6 +203,7 @@ bool Tiff::createFile(const std::string& newFileName)
     cleanup();
   mValidObject = false;
   mtif = 0;
+  mquality = 70;
   setFileName(newFileName);
     
   try {
@@ -201,6 +244,7 @@ bool Tiff::load(const std::string& newFileName)
   uint32 xres=0, yres=0;
   uint32 xpos=0, ypos=0;
   uint32 imageDepth = 0;
+  char* description = 0;
 
   struct { uint16 photometric; char const* description; } photostrings[] = { 
     { PHOTOMETRIC_MINISWHITE, "Minimal is White" },
@@ -259,6 +303,7 @@ bool Tiff::load(const std::string& newFileName)
       TIFFGetField(mtif, TIFFTAG_IMAGEDEPTH, &imageDepth);
       toff_t dir_offset=0;
       TIFFGetField(mtif, TIFFTAG_EXIFIFD, &dir_offset);
+      int descRet=TIFFGetField(mtif, TIFFTAG_IMAGEDESCRIPTION, &description);
       if (dir_offset != 0)
       {
           //TIFFReadEXIFDirectory(mtif, dir_offset);
@@ -295,6 +340,8 @@ bool Tiff::load(const std::string& newFileName)
           (int) photometric);
       printf("tileDepth %i tileSize %i planarConfig %i\n", (int) tileDepth, (int) tileSize, (int) planarConfig);
       printf("Custom Offset %i SubfileType %i OSubFileType %i SubIFD %i xRes %i yRes %i xPos %i yPos %i Image Depth %i", custom_offset, subFileType, osubFileType, subIFD, xres, yres, xpos, ypos, imageDepth);
+      if (description != NULL) printf("Image Description: %s", description);
+      printf("\n");
       dirCount++;
       } 
       while (TIFFReadDirectory(mtif));

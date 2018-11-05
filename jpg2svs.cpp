@@ -50,7 +50,7 @@ public:
   std::string getErrMsg() { return errMsg; }
   int open(std::string inputFile, std::string outputFile, bool markOutline, bool includeZStack, int bestXOffset = -1, int bestYOffset = -1);
   int convert();
-  int outputLevel(int level, int direction, int zLevel, int magnification);
+  int outputLevel(int level, bool tiled, int direction, int zLevel, int magnification);
 };
 
 
@@ -70,12 +70,14 @@ SlideConvertor::SlideConvertor()
 }
 
 
-int SlideConvertor::outputLevel(int level, int direction, int zLevel, int magnification)
+int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel, int magnification)
 {
   int srcTotalWidth=0;
   int srcTotalHeight=0;
   int destTotalWidth=0;
   int destTotalHeight=0;
+  int tileWidth=256;
+  int tileHeight=256;
   double xScale=0.0, yScale=0.0;
   int grabWidth=0, grabHeight=0;
   BYTE* pSizedBitmap = 0;
@@ -83,7 +85,7 @@ int SlideConvertor::outputLevel(int level, int direction, int zLevel, int magnif
   int readZLevel = 0;
   int readDirection = 0;
   unsigned char bkgColor=255;
-  
+ 
   if (level==0) 
   {
     readZLevel = zLevel;
@@ -107,7 +109,22 @@ int SlideConvertor::outputLevel(int level, int direction, int zLevel, int magnif
   std::cout << output.str();
   srcTotalWidth = slide->getActualWidth(level);
   srcTotalHeight = slide->getActualHeight(level);
-  if (magnification==1 || slide->isPreviewSlide(level))
+  if (tiled==false)
+  {
+    tileWidth=0;
+    tileHeight=0;
+    double magnifyX=magnification;
+    double magnifyY=magnification;
+    double destTotalWidthDec = mBaseTotalWidth / magnifyX;
+    double destTotalHeightDec = mBaseTotalHeight / magnifyY;
+    destTotalWidth = (int) destTotalWidthDec;
+    destTotalHeight = (int) destTotalHeightDec;
+    xScale=(double) srcTotalWidth / (double) destTotalWidth;
+    yScale=(double) srcTotalHeight / (double) destTotalHeight;
+    grabWidth=(int) srcTotalWidth;
+    grabHeight=(int) srcTotalHeight;
+  } 
+  else if (magnification==1 || slide->isPreviewSlide(level))
   {
     destTotalWidth = srcTotalWidth;
     destTotalHeight = srcTotalHeight;
@@ -154,7 +171,7 @@ int SlideConvertor::outputLevel(int level, int direction, int zLevel, int magnif
     oss << "|OffsetZ = " << (mZSteps-1) << "\0";
   }
   std::string strAttributes=oss.str();
-  if (tif->setTileAttributes(3, 8, destTotalWidth, destTotalHeight, 256, 256, 1, quality, strAttributes)==false)
+  if (tif->setAttributes(3, 8, destTotalWidth, destTotalHeight, tileWidth, tileHeight, 1, quality)==false || tif->setDescription(strAttributes, mBaseTotalWidth, mBaseTotalHeight)==false)
   {
     std::string errMsg;
     tif->getErrMsg(errMsg);
@@ -203,7 +220,15 @@ int SlideConvertor::outputLevel(int level, int direction, int zLevel, int magnif
           }
           pBitmap2 = pSizedBitmap;
         }
-        if (grabWidth!=256 || grabHeight!=256)
+        if (tiled==false)
+        {
+          cv::Mat imgSrc(grabHeight, grabWidth, CV_8UC3, pBitmap2);
+          cv::Size scaledSize(destTotalWidth, destTotalHeight);
+          cv::resize(imgSrc, imgScaled, scaledSize, (double) destTotalWidth / (double) srcTotalWidth, (double) destTotalHeight / (double) srcTotalHeight);
+          imgSrc.release();
+          pBitmap2 = imgScaled.data;  
+        } 
+        else if (grabWidth!=256 || grabHeight!=256)
         {
           cv::Mat imgSrc(grabHeight, grabWidth, CV_8UC3, pBitmap2);
           cv::Size scaledSize(256, 256);
@@ -224,7 +249,11 @@ int SlideConvertor::outputLevel(int level, int direction, int zLevel, int magnif
           }
           */
         }
-        bool writeOk=tif->writeEncodedTile(pBitmap2, xDest, yDest, 1);
+        bool writeOk=false;
+        if (tiled)
+          writeOk=tif->writeEncodedTile(pBitmap2, xDest, yDest, 1);
+        else
+          writeOk=tif->writeImage(pBitmap2);
         imgScaled.release();
         /*
         if (scaled)
@@ -254,9 +283,15 @@ int SlideConvertor::outputLevel(int level, int direction, int zLevel, int magnif
       {
         delete[] pBitmap1;
       }
-      xDest += 256;
+      if (tiled) 
+        xDest += tileWidth;
+      else
+        xDest = destTotalWidth;
     }
-    yDest += 256;
+    if (tiled)
+      yDest += tileHeight;
+    else
+      yDest = destTotalHeight;
     ySrc += grabHeight;
     perc=(int)(((double) ySrc / (double) srcTotalHeight) * 100);
     if (perc>100)
@@ -315,6 +350,7 @@ int SlideConvertor::convert()
   int totalLevels1, totalLevels2;
   
   int error = 0;
+  bool tiled = true;
 
   if (mValidObject == false) return 1;
  
@@ -337,7 +373,8 @@ int SlideConvertor::convert()
     //****************************************************************
     for (int step = 0; step < totalLevels1 && error==0; step++)
     {
-      error=outputLevel(levels1[step], 0, 0, magnifyLevels1[step]);
+      tiled = (step == 1 ? false : true);
+      error=outputLevel(levels1[step], tiled, 0, 0, magnifyLevels1[step]);
     }
   }
   //****************************************************************
@@ -384,7 +421,8 @@ int SlideConvertor::convert()
     //****************************************************************
     for (int step=0; step < totalLevels1 && error==0; step++)
     {
-      error=outputLevel(levels1[step], firstDirection, bottomLevel, magnifyLevels1[step]);
+      tiled = (step == 1 ? false : true);
+      error=outputLevel(levels1[step], tiled, firstDirection, bottomLevel, magnifyLevels1[step]);
     }
     //****************************************************************
     // Output the next three bottom levels
@@ -393,7 +431,8 @@ int SlideConvertor::convert()
     {
       for (int step=0; step < totalLevels2 && error==0; step++)
       {
-        error=outputLevel(levels2[step], 1, zLevel, magnifyLevels2[step]);
+        tiled = (step == 1 ? false : true);
+        error=outputLevel(levels2[step], tiled, 1, zLevel, magnifyLevels2[step]);
       }
     }
     //****************************************************************
@@ -401,7 +440,8 @@ int SlideConvertor::convert()
     //****************************************************************
     for (int step=0; step < totalLevels2 && error==0 && firstDirection != 0; step++)
     {
-      error=outputLevel(levels2[step], 0, 0, magnifyLevels2[step]);
+      tiled = (step == 1 ? false : true);
+      error=outputLevel(levels2[step], tiled, 0, 0, magnifyLevels2[step]);
     }
     //****************************************************************
     // Output the last four upper levels
@@ -410,7 +450,8 @@ int SlideConvertor::convert()
     {
       for (int step=0; step < totalLevels2 && error==0; step++)
       {
-        error=outputLevel(levels2[step], 2, zLevel, magnifyLevels2[step]);
+        tiled = (step == 1 ? false : true);
+        error=outputLevel(levels2[step], tiled, 2, zLevel, magnifyLevels2[step]);
       }
     }
   }
