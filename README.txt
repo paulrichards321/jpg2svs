@@ -1,13 +1,30 @@
-# Instructions for compiling jpg2svs:
+#------------------------------------------------------------------------------
+# What is this?
+#------------------------------------------------------------------------------
+# An Olympus/Bacus ini jpg dataset convertor to TIFF/SVS file format readable
+# by Aperio ImageScope, the openslide library, and OMERO Virtual Microscopy.
+# It is used for converting a directory of jpg files with two or more of their
+# accompanying  "FinalScan.ini", "FinalCond.ini", "SlideScan.ini", 
+# "SlideCond.ini" files to convert into one large tiff file. The resulting tiff
+# will be in Aperio like TIFF file format, but should be readable by any 
+# program that can process large tiled TIFF files.
 
+#------------------------------------------------------------------------------
+# Instructions for compiling jpg2svs:
+#------------------------------------------------------------------------------
 # Go to method 1 right below to use msys2 on Windows to build jpg2svs.
 # Skip to method 2 if you are using Visual Studio.
 # Skip to method 3 if you are using RedHat/CentOS/Scientific Linux.
+# Skip to usage notes at the bottom of this document if you are interested
+# in how to use the command line program.
 
-# Every line in this file that starts with a # (pound symbol) is not meant to be typed into a shell prompt (unix or msys2) or command prompt (windows/visual studio)
-# ------------------------------------------------------------------------------
+# Every line in this file that starts with a # (pound symbol) is not meant to
+# be typed into a shell prompt (unix or msys2) or command prompt 
+# (windows/visual studio)
+
+# -----------------------------------------------------------------------------
 # METHOD 1 - Compiling jpg2svs on Windows with msys2
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Install MSYS2. Download the package from here: 
 # http://www.msys2.org/
 
@@ -51,10 +68,10 @@ make
 # will need to also supply the MSYS2 dlls for opencv, libjpeg-turbo, and
 # libtiff, and some other generic C/C++ runtime MSYS2 dlls.
 
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # METHOD 2: Compiling jpg2svs with Visual Studio (tested with Visual Studio 
 # 2015 on Windows 8.1 and Windows 10)
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # --NOTE ABOUT VCVARS32.BAT, VCVARS64.BAT, CMAKE, AND ARCHITECTURE--
 # In the below instructions you will use a program called cmake and a Visual
 # Studio batch file called vcvars. Make sure when you set your architecture 
@@ -100,7 +117,10 @@ cd build
 # --DOWNLOAD AND BUILD LIBTIFF-- 
 # I have successfully used version 4.0.7 and 4.0.9. The libtiff site is here: 
 # http://www.simplesystems.org/libtiff/
-# Unzip or untar the libtiff archive. You will need to edit the nmake.opt file in the tiff root directory to include jpeg support by specifying the jpeg headers and resulting built jpeg library directory. You can search JPEG_SUPPORT and remove the # (pound sign) in front of the JPEG = lines:
+# Unzip or untar the libtiff archive. You will need to edit the nmake.opt 
+# file in the tiff root directory to include jpeg support by specifying the
+# jpeg headers and resulting built jpeg library directory. You can search 
+# JPEG_SUPPORT and remove the # (pound sign) in front of the JPEG = lines:
 JPEG_SUPPORT = 1
 JPEGDIR = ../libjpeg-turbo
 JPEG_INCLUDE = -I../libjpeg-turbo_dist -I$(JPEGDIR)
@@ -138,9 +158,9 @@ cd jpg2svs
 nmake /f Makefile.vc
 
 # --FINAL NOTES--
-# You will properly get some warning messages about signed and unsigned integers
-# but it will still work properly once it is built. If it builds without any
-# errors, jpg2svs.exe will be in the current directory.
+# You will properly get some warning messages about signed and unsigned 
+# integers but it will still work properly once it is built. If it builds 
+# without any errors, jpg2svs.exe will be in the current directory.
 
 # You will also need the dll for opencv (at this point opencv_world342.dll) in
 # the same directory as jpg2svs.exe when you run it. The Visual C++ 2015 C/C++
@@ -150,15 +170,15 @@ nmake /f Makefile.vc
 # If you are still lost, please be patient. I am going to script this whole 
 # process with PowerShell soon.
 
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # METHOD 3: Compiling jpg2svs on Redhat 7/CentOS 7/Scientific Linux
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Install git and development tools if you haven't done so already
 sudo yum install git
 sudo yum groupinstall 'Development Tools'
 
-# Install libjpeg and libtiff by typing:
-sudo yum install libjpeg-turbo-devel libtiff-devel
+# Install libjpeg, libtiff, and ncurses by typing:
+sudo yum install libjpeg-turbo-devel libtiff-devel ncurses-devel
 
 # -- BUILD OPENCV OR DOWNLOAD DEVELOPMENT RPM FOR IT --
 # You will need opencv >= 3. You can either find a place to grab or build it using these directions:
@@ -180,7 +200,10 @@ cmake -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_INSTALL_PREFIX=/usr/local ../opencv/
 make
 sudo make install
 
-# When you build opencv manually, it places it's library files in /usr/local/lib64. You will need /usr/local/lib64 in your LD Path if it isn't already there. You can add this by dropped adding a file in /etc/ld.so.conf called usrlocallib64.conf:
+# When you build opencv manually, it places it's library files in 
+# /usr/local/lib64. You will need /usr/local/lib64 in your LD Path if it 
+# isn't already there. You can add this by dropped adding a file in 
+# /etc/ld.so.conf called usrlocallib64.conf:
 sudo sh -c 'echo "/usr/local/lib64" > /etc/ld.so.conf.d/usrlocallib64.conf'
 
 # Run ldconfig:
@@ -192,16 +215,23 @@ cd ..
 # -- GRAB THE JPG2SVS IF YOU HAVEN'T ALREADY AND COMPILE --
 git clone https://github.com/paulrichards321/jpg2svs
 cd jpg2svs
-make -fMakefile.linux
+make -f Makefile.unix
 
-# You might get some warnings about signed/unsigned integer, you can ignore those. 
+# You might get some warnings about signed/unsigned integer, you can ignore
+# those. 
 # --INSTALL --
 # You can then copy jpg2svs to somewhere in your path:
 cp jpg2svs /usr/local/bin
 
-# --USAGE SYNTAX PARAMETERS --
-#syntax: jpg2svs -h[0,1] -x[bestXOffset] -y[bestYOffset] -z[0,1] <inputfolder> <outputfile> 
-#Flags:	-h highlight visible areas with a black border on the top pyramid level. Default on, set to 0 to turn off.
-#	-x and -y Optional: set best X, Y offset of image if upper and lower pyramid levels are not aligned.
+#------------------------------------------------------------------------------
+# HOW TO USE THE COMMAND LINE PROGRAM
+#------------------------------------------------------------------------------
+# syntax: jpg2svs -h[0,1] -x[bestXOffset] -y[bestYOffset] -z[0,1] <inputfolder> <outputfile> 
+# Flags:	
+# -h highlight visible areas with a black border on the top pyramid
+#    level. Default on, set to 0 to turn off.
+#	-x and -y are Optional: set best X, Y offset of image if upper and lower 
+#    pyramid levels are not aligned.
 #	-z Process Z-stack. Set to 0 to turn off. Default on if the image has one.
+#
 
