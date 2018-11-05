@@ -3,7 +3,7 @@
 .cpp.obj:
 	$(CXX) -c $<
 
-OBJ	= \
+CONV_OBJ	= \
 	jpg2svs.obj \
 	jpgcachesupport.obj \
        	imagesupport.obj \
@@ -12,12 +12,19 @@ OBJ	= \
        	composite.obj \
        	console-mswin.obj
 
-all: 	jpg2svs.exe
+INFO_OBJ = \
+	svsinfo.obj \
+	imagesupport.obj \
+	jpgsupport.obj \
+ 	tiffsupport.obj
 
-jpg2svs.exe: $(OBJ)
-	$(LD) /debug /out:jpg2svs.exe /SUBSYSTEM:console $(OBJ) $(JPEG_LIB) $(TIFF_LIB) $(OPENCV_LIB) 
+all: 	jpg2svs.exe svsinfo.exe
 
+jpg2svs.exe: $(CONV_OBJ)
+	$(LD) /debug /out:jpg2svs.exe /SUBSYSTEM:console $(CONV_OBJ) $(JPEG_LIB) $(TIFF_LIB) $(OPENCV_LIB) 
 
+svsinfo.exe: $(INFO_OBJ)
+	$(LD) /debug /out:svsinfo.exe /SUBSYSTEM:console $(INFO_OBJ) $(JPEG_LIB) $(TIFF_LIB) 
 
 clean:
 	-del *.obj
