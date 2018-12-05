@@ -22,7 +22,8 @@ THE SOFTWARE.
 #ifndef TIFFSUPPORT_H
 #define TIFFSUPPORT_H
 
-#include <string>
+#include <cstring>
+#include <cstdio>
 #include "imagesupport.h"
 
 extern "C" {
