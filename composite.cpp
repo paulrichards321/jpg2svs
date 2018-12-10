@@ -1257,6 +1257,7 @@ bool CompositeSlide::read(BYTE *pBmp, int level, int direction, int zLevel, int 
 bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, int width, int height, int level)
 {
   IniConf *pHigherConf=mConf[level];
+  const int default_thickness=8;
   //std::ofstream logFile("drawBorder.log", std::ios::out | std::ofstream::app);
   
   //logFile << " drawBorder x: " << x << " y: " << y << " width: " << width << " height: " << height << " level: " << level << " samplesPerPixel: " << samplesPerPixel << std::endl;
@@ -1289,8 +1290,8 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
     int yCurrentPos=(int) lround(pLowerConf->mxyArr[tileNum].myPixel / yZoomOut);
     // first check if the x y coordinates are within the region of the bitmap
     
-    if (((x<xCurrentPos && x+width>xCurrentPos) || (x>=xCurrentPos && x<xCurrentPos+fileWidth)) &&
-       ((y<yCurrentPos && y+height>yCurrentPos) || (y>=yCurrentPos && y<yCurrentPos+fileHeight)))
+    if (((x<xCurrentPos-default_thickness && x+width>xCurrentPos-default_thickness) || (x>=xCurrentPos-default_thickness && x<xCurrentPos+fileWidth+default_thickness)) &&
+       ((y<yCurrentPos-default_thickness && y+height>yCurrentPos-default_thickness) || (y>=yCurrentPos-default_thickness && y<yCurrentPos+fileHeight+default_thickness)))
     {
       int y2=0, y3=fileHeight;
       int y4=0, y5=fileHeight;
@@ -1417,16 +1418,16 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
         {
           yWrite2=height;
         }
-        int xLineMark=xCurrentPos-x;
+        int xLineMark=xCurrentPos-x-default_thickness;
         int thickness;
         if (xLineMark < 0)
         {
-          thickness=xLineMark+8;
+          thickness=xLineMark+default_thickness;
           xLineMark=0;
         }  
         else
         {
-          thickness=8;
+          thickness=default_thickness;
         }  
         if (xLineMark+thickness > width)
         {
@@ -1450,16 +1451,16 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
         {
           yWrite2=height;
         }
-        int xLineMark=(xCurrentPos+fileWidth-8)-x;
+        int xLineMark=(xCurrentPos+fileWidth)-x;
         int thickness;
         if (xLineMark<0)
         {
-          thickness=xLineMark+8;
+          thickness=xLineMark+default_thickness;
           xLineMark=0;
         }
         else
         {
-          thickness=8;
+          thickness=default_thickness;
         }  
         if (xLineMark+thickness > width)
         {
@@ -1486,15 +1487,15 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
           xWrite2=width;
         }
         int thickness;
-        int yLineMark=yCurrentPos-y;
+        int yLineMark=yCurrentPos-y-default_thickness;
         if (yLineMark < 0)
         {
-          thickness=yLineMark + 8;
+          thickness=yLineMark + default_thickness;
           yLineMark = 0;
         }
         else
         {
-          thickness=8;
+          thickness=default_thickness;
         }  
         if (yLineMark+thickness > height)
         {
@@ -1519,16 +1520,16 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
         {
           xWrite2=width;
         }
-        int yLineMark=(yCurrentPos+fileHeight-8)-y;
+        int yLineMark=(yCurrentPos+fileHeight)-y;
         int thickness;
         if (yLineMark < 0)
         {
-          thickness=yLineMark + 8;
+          thickness=yLineMark + default_thickness;
           yLineMark = 0;
         }
         else
         {
-          thickness=8;
+          thickness=default_thickness;
         }
         if (yLineMark+thickness > height)
         {
