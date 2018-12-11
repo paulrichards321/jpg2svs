@@ -188,8 +188,8 @@ bool CompositeSlide::open(const std::string& srcFileName, bool setGrayScale, boo
   std::string ImageQuality = "ImageQuality";
   std::string inputDir = srcFileName;
   mGrayScale = setGrayScale;
-  int xAxis, yAxis;
-  int xOffset, yOffset;
+  //int xAxis, yAxis;
+  //int xOffset, yOffset;
 
   initialize();
 
@@ -321,7 +321,7 @@ bool CompositeSlide::open(const std::string& srcFileName, bool setGrayScale, boo
             {
               std::string xStageSubStr = line.substr(xStagePos+lXStageRef.length()+1);
               pConf->mxAxis=atoi(xStageSubStr.c_str());
-              xAxis=pConf->mxAxis;
+              //xAxis=pConf->mxAxis;
             //  logFile << "!!xAxis " << pConf->xAxis << std::endl;
             }
             size_t yStagePos=line.find(lYStageRef);
@@ -329,7 +329,7 @@ bool CompositeSlide::open(const std::string& srcFileName, bool setGrayScale, boo
             {
               std::string yStageSubStr = line.substr(yStagePos+lYStageRef.length()+1);
               pConf->myAxis=atoi(yStageSubStr.c_str());
-              yAxis=pConf->myAxis;
+              //yAxis=pConf->myAxis;
             //  logFile << "!!yAxis " << pConf->yAxis << std::endl;
             }
             size_t yStepPos = line.find(lYStepSize);
@@ -351,14 +351,14 @@ bool CompositeSlide::open(const std::string& srcFileName, bool setGrayScale, boo
             size_t xOffsetPos = line.find(lXOffset);
             if (xOffsetPos != std::string::npos && xOffsetPos+lXOffset.length()+1<line.length())
             {
-              std::string xOffsetSubStr = line.substr(xOffsetPos+lXOffset.length()+1);
-              xOffset = atoi(xOffsetSubStr.c_str());
+              //std::string xOffsetSubStr = line.substr(xOffsetPos+lXOffset.length()+1);
+              //xOffset = atoi(xOffsetSubStr.c_str());
             }
             size_t yOffsetPos = line.find(lYOffset);
             if (yOffsetPos != std::string::npos && yOffsetPos+lYOffset.length()+1<line.length())
             {
-              std::string yOffsetSubStr = line.substr(yOffsetPos+lYOffset.length()+1);
-              yOffset = atoi(yOffsetSubStr.c_str());
+              //std::string yOffsetSubStr = line.substr(yOffsetPos+lYOffset.length()+1);
+              //yOffset = atoi(yOffsetSubStr.c_str());
             }
             size_t dMagPos = line.find(dMagnification);
             if (dMagPos != std::string::npos && dMagPos+dMagnification.length()+1<line.length())
@@ -693,41 +693,41 @@ bool CompositeSlide::open(const std::string& srcFileName, bool setGrayScale, boo
     logFile << "fileName=" << mConf[fileNum]->mname << " totalWidth in pixels=" << mConf[fileNum]->mtotalWidth << " totalHeight in pixels=" << mConf[fileNum]->mtotalHeight << std::endl;
   }
 
-  IniConf* pHigherConf = NULL;
-  IniConf* pLowerConf = NULL;
+  //IniConf* pHigherConf = NULL;
+  //IniConf* pLowerConf = NULL;
   int higherLevel = -1;
   int lowerLevel = -1;
   bool higherLevelFound = false, lowerLevelFound = false;
-  double higherLevelXDiv, higherLevelYDiv;
+  //double higherLevelXDiv, higherLevelYDiv;
   //int zoomedXDetail, zoomedYDetail;
   if (mConf[2]->mfound)
   {
-    pHigherConf = mConf[2];
+    //pHigherConf = mConf[2];
     higherLevelFound = true;
     higherLevel = 2;
   }
   else if (mConf[3]->mfound)
   {
-    pHigherConf = mConf[3];
+    //pHigherConf = mConf[3];
     higherLevelFound = true;
     higherLevel = 3;
   }
   if (mConf[1]->mfound)
   {
-    pLowerConf = mConf[1];
+    //pLowerConf = mConf[1];
     lowerLevel = 1;
     lowerLevelFound = true;
   }
   else if (mConf[0]->mfound)
   {
-    pLowerConf = mConf[0];
+    //pLowerConf = mConf[0];
     lowerLevel = 0;
     lowerLevelFound = true;
   }
   if (lowerLevelFound && higherLevelFound)
   {
-    higherLevelXDiv = pHigherConf->mxAdj / pLowerConf->mxAdj;
-    higherLevelYDiv = pHigherConf->myAdj / pLowerConf->myAdj; 
+    //higherLevelXDiv = pHigherConf->mxAdj / pLowerConf->mxAdj;
+    //higherLevelYDiv = pHigherConf->myAdj / pLowerConf->myAdj; 
     // zoomedXDetail = pLowerConf->detailedWidth / higherLevelXDiv;
     // zoomedYDetail = pLowerConf->detailedHeight / higherLevelYDiv;
   } 
@@ -873,15 +873,15 @@ bool CompositeSlide::findXYOffset(int lowerLevel, int higherLevel, int *bestXOff
   double yMulti0 = mConf[2]->myAdj / mConf[0]->myAdj;
   double xMulti1 = mConf[2]->mxAdj / mConf[1]->mxAdj;
   double yMulti1 = mConf[2]->myAdj / mConf[1]->myAdj;
-  double xMulti2 = mConf[1]->mxAdj / mConf[2]->mxAdj;
-  double yMulti2 = mConf[1]->myAdj / mConf[2]->myAdj;
-  int bestXOffset2, bestYOffset2;
+ // double xMulti2 = mConf[1]->mxAdj / mConf[2]->mxAdj;
+ // double yMulti2 = mConf[1]->myAdj / mConf[2]->myAdj;
+  //int bestXOffset2, bestYOffset2;
   *bestXOffset0=(int) lround((((mConf[2]->mxMax - mConf[2]->mxMin) / mConf[2]->mxAdj) * xMulti0) - ((mConf[0]->mxMax - mConf[0]->mxMin) / mConf[0]->mxAdj));
   *bestYOffset0=(int) lround((((mConf[2]->myMax - mConf[2]->myMin) / mConf[2]->myAdj) * yMulti0) - ((mConf[0]->myMax - mConf[0]->myMin) / mConf[0]->myAdj));
   *bestXOffset1=(int) lround((((mConf[2]->mxMax - mConf[2]->mxMin) / mConf[2]->mxAdj) * xMulti1) - ((mConf[1]->mxMax - mConf[1]->mxMin) / mConf[1]->mxAdj));
   *bestYOffset1=(int) lround((((mConf[2]->myMax - mConf[2]->myMin) / mConf[2]->myAdj) * yMulti1) - ((mConf[1]->myMax - mConf[1]->myMin) / mConf[1]->myAdj));
-  bestXOffset2=(int)((double) (*bestXOffset1 * xMulti2));
-  bestYOffset2=(int)((double) (*bestYOffset1 * yMulti2));
+  //bestXOffset2=(int)((double) (*bestXOffset1 * xMulti2));
+  //bestYOffset2=(int)((double) (*bestYOffset1 * yMulti2));
   IniConf *pLowerConf = mConf[lowerLevel];
   IniConf *pHigherConf = mConf[higherLevel];
   double xZoomOut = pHigherConf->mxAdj / pLowerConf->mxAdj;
@@ -899,9 +899,6 @@ bool CompositeSlide::findXYOffset(int lowerLevel, int higherLevel, int *bestXOff
   for (int i=0; i<pLowerConf->mtotalTiles; i++)
   {
     cv::Mat imgPart = cv::imread(pLowerConf->mxyArr[i].mBaseFileName, CV_LOAD_IMAGE_COLOR); 
-    Pt ptNow, ptStart;
-    ptNow.x=0;
-    ptNow.y=0;
     if (imgPart.total()>0)
     {
       //************************************************************
@@ -998,7 +995,7 @@ bool CompositeSlide::findXYOffset(int lowerLevel, int higherLevel, int *bestXOff
     diffXs.push_back(diffX);
     diffYs.push_back(diffY);
   }
-  int medianIndex = 0;
+  //int medianIndex = 0;
   int bestXOffset, bestYOffset;
   if (mBestXOffset>=0 && mBestYOffset>=0)
   {
@@ -1021,7 +1018,7 @@ bool CompositeSlide::findXYOffset(int lowerLevel, int higherLevel, int *bestXOff
   logFile << "Diff X Vector Size: " << diffXs.size() << std::endl;
   logFile << "Best (First in sorted arrays) X, Y alignment: " << bestXOffset << " " << bestYOffset << std::endl;
   logFile << "Alignment array: " << std::endl;
-  for (int i=0; i<diffXs.size(); i++)
+  for (unsigned int i=0; i<diffXs.size(); i++)
   {
     logFile << " {" << diffXs[i] << "," << diffYs[i] << "} ";
   }
@@ -1280,10 +1277,10 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
   double yZoomOut = pHigherConf->myAdj / pLowerConf->myAdj;
   int fileWidth=(int) lround(pLowerConf->mpixelWidth / xZoomOut);
   int fileHeight=(int) lround(pLowerConf->mpixelHeight / yZoomOut);
-  int xTolerance=(int)(((double)fileWidth) / 4);
-  int yTolerance=(int)(((double)fileHeight) / 4);
-  int xLastPos=-1,yLastPos=-1;
-  int xNextPos=-1,yNextPos=-1;
+  //int xTolerance=(int)(((double)fileWidth) / 4);
+  //int yTolerance=(int)(((double)fileHeight) / 4);
+  //int xLastPos=-1,yLastPos=-1;
+  //int xNextPos=-1,yNextPos=-1;
   for (int tileNum=0; tileNum<pLowerConf->mtotalTiles; tileNum++)
   {
     int xCurrentPos=(int) lround(pLowerConf->mxyArr[tileNum].mxPixel / xZoomOut);

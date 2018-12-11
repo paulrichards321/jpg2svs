@@ -31,6 +31,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "tiffsupport.h"
 #include "composite.h"
 
+void fillTile(BYTE *pDest, BYTE *pSrc, int tileWidth, int tileHeight, int subTileWidth, int subTileHeight, BYTE bkgColor);
+void simpleFillTile(BYTE *pDest, BYTE *pSrc, int tileWidth, int tileHeight, BYTE bkgColor);
+
+
 class SlideConvertor
 {
 protected:
@@ -68,7 +72,7 @@ SlideConvertor::SlideConvertor()
   mBaseTotalWidth=0;
   mBaseTotalHeight=0;
   mIncludeZStack=true;
-  mQuality=70;
+  mQuality=90;
 }
 
 
@@ -122,7 +126,6 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   {
     srcTotalWidthL2 = slide->getActualWidth(2);
     srcTotalHeightL2 = slide->getActualHeight(2);
-    std::cout << "srcTotalWidthL2=" << srcTotalWidthL2 << " srcTotalHeightL2=" << srcTotalHeightL2 << std::endl;
   }
   if (tiled==false)
   {
@@ -176,8 +179,6 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
 
     xScaleL2=((double) srcTotalWidthL2 / (double) destTotalWidth) / ((double) srcTotalWidth / (double) destTotalWidth);
     yScaleL2=((double) srcTotalHeightL2 / (double) destTotalHeight) / ((double) srcTotalHeight / (double) destTotalHeight);
-    //xScaleReverseL2=((double) destTotalWidth / (double) srcTotalWidthL2) / ((double) srcTotalWidth / (double) destTotalWidth);
-    //yScaleReverseL2=((double) destTotalHeight / (double) srcTotalHeightL2) / ((double) srcTotalHeight / (double) destTotalHeight);
     xScaleReverseL2=((double) destTotalWidth / (double) srcTotalWidthL2) / 2;
     yScaleReverseL2=((double) destTotalHeight / (double) srcTotalHeightL2) / 2;
  
@@ -230,6 +231,10 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   if (fillin)
   {
     pBitmapL2 = new BYTE[srcTotalWidthL2 * srcTotalHeightL2 * 3];
+    if (pBitmapL2==NULL)
+    {
+      *logFile << "Failed to allocate memory for full pyramid level 2. Out of memory?" << std::endl;
+    }
   }
   int readWidthL2=0;
   int readHeightL2=0;
@@ -237,11 +242,9 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   if (pBitmapL2)
   {
     readOkL2=slide->read(pBitmapL2, 2, 0, 0, 0, 0, srcTotalWidthL2, srcTotalHeightL2, false, &readWidthL2, &readHeightL2);
-    //memset(pBitmapL2, 0, srcTotalWidthL2*srcTotalHeightL2*3);
-    //readOkL2=true;
     if (readOkL2==false)
     {
-      std::cout << "Failed to read full level 2." << std::flush;
+      *logFile << "Failed to read full pyramid level 2." << std::endl;
     }
   }
   while (ySrc<srcTotalHeight && yDest<destTotalHeight && error==false)
@@ -264,8 +267,6 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
         cv::Mat imgScaled;
         cv::Mat imgScaled2;
         BYTE *pBitmap3 = NULL;
-        //GdkPixbuf* srcPixBuf = NULL;
-        //GdkPixbuf* destPixBuf = NULL;
         if (readWidth != grabWidth || readHeight != grabHeight)
         {
         //    *logFile << "Tile shorter: width=" << readWidth << " height=" << readHeight << std::endl;
@@ -329,21 +330,8 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
             cv::Size scaledSize(256, 256);
             cv::resize(imgSrc, imgScaled2, scaledSize, xScaleReverseL2, yScaleReverseL2);
             imgSrc.release();
-            BYTE *pDest=imgScaled2.data;
-            BYTE *pSrc=pBitmap2;
-            BYTE *pSrcEnd=&pSrc[256*256*3];
-            while (pSrc < pSrcEnd)
-            {
-              if ((pSrc[0] != bkgColor || pSrc[1] != bkgColor || pSrc[2] != bkgColor))
-              {
-                pDest[0] = pSrc[0];
-                pDest[1] = pSrc[1];
-                pDest[2] = pSrc[2];
-              }
-              pDest += 3;
-              pSrc += 3;
-            }
-            pBitmap2 = imgScaled2.data;
+            fillTile(pBitmap2, imgScaled2.data, 256, 256, 8, 8, bkgColor);
+            //simpleFillTile(pBitmap2, imgScaled2.data, 256, 256, bkgColor);
           } 
         } 
         bool writeOk=false;
@@ -435,6 +423,71 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   }
   mStep++;
   return (error==true ? 1 : 0); 
+}
+
+
+void simpleFillTile(BYTE *pDest, BYTE *pSrc, int tileWidth, int tileHeight, BYTE bkgColor)
+{
+  int offset=tileHeight*tileWidth*3;
+  BYTE *pSrcEnd=pSrc+offset;
+  while (pSrc < pSrcEnd) 
+  {
+    if (pDest[0] == bkgColor && pDest[1] == bkgColor && pDest[2] == bkgColor)
+    {
+      pDest[0] = pSrc[0];
+      pDest[1] = pSrc[1];
+      pDest[2] = pSrc[2];
+    }
+    pSrc += 3;
+    pDest += 3;
+  }
+}
+
+
+void fillTile(BYTE *pDest, BYTE *pSrc, int tileWidth, int tileHeight, int subTileWidth, int subTileHeight, BYTE bkgColor)
+{
+  int rowSize=tileWidth * 3;
+  int subRowSize = subTileWidth * 3;
+  for (int y1 = 0; y1 < tileHeight; y1 += subTileHeight)
+  {
+    for (int x1 = 0; x1 < rowSize; x1 += subRowSize)
+    {
+      int y3=y1+subTileHeight;
+      bool set_bkg = true;
+      for (int y2=y1; y2 < y3 && set_bkg; y2++)
+      {
+        BYTE *pDest2=&pDest[(y2*rowSize)+x1];
+        BYTE *pDestEnd=pDest2+subRowSize;
+        while (pDest2 < pDestEnd)
+        {
+          if (pDest2[0] != bkgColor || pDest2[1] != bkgColor || pDest2[2] != bkgColor)
+          {
+            set_bkg = false;
+            break;
+          }
+          pDest2 += 3;
+        }
+      }
+      if (set_bkg)
+      {
+        for (int y2=y1; y2 < y3; y2++)
+        {
+          int offset=(y2*rowSize)+x1;
+          BYTE *pSrc2=pSrc+offset;
+          BYTE *pSrcEnd=pSrc2+subRowSize;
+          BYTE *pDest2=pDest+offset;
+          while (pSrc2 < pSrcEnd) 
+          {
+            pDest2[0] = pSrc2[0];
+            pDest2[1] = pSrc2[1];
+            pDest2[2] = pSrc2[2];
+            pSrc2 += 3;
+            pDest2 += 3;
+          }
+        }
+      }
+    }
+  }
 }
 
 
@@ -647,7 +700,7 @@ int main(int argc, char** argv)
   bool doBorderHighlight = true;
   bool includeZStack = false;
   int quality = 90;
-  char syntax[] = "syntax: jpg2svs -h[0,1] -x[bestXOffset] -y[bestYOffset] -z[0,1] <inputfolder> <outputfile> \nFlags:\t-h highlight visible areas with a black border on the top pyramid level. Default on, set to 0 to turn off.\n\t-x and -y Optional: set best X, Y offset of image if upper and lower pyramid levels are not aligned.\n\t-z Process Z-stack. Set to 0 to turn off. Default on if the image has one.\n";
+  char syntax[] = "syntax: jpg2svs -h[0,1] -x[bestXOffset] -y[bestYOffset] -z[0,1] <inputfolder> <outputfile> \nFlags:\t-h highlight visible areas with a black border on the top pyramid level. Default off.\n\t-x and -y Optional: set best X, Y offset of image if upper and lower pyramid levels are not aligned.\n\t-z Process Z-stack. Set to 0 to turn off. Default on if the image has one.\n\t-q Set minimal jpeg quality percentage. Default 90.\n";
 
   if (argc < 3)
   {

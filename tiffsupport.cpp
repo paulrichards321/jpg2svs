@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using namespace TIFFLIB;
 #define CVT(x)  (((x) * 255L) / ((1L<<16)-1))
 
+/*
 static int colorMapBitCount(int n, uint16 *r, uint16 *g, uint16 *b)
 {
   while (n-- > 0) {
@@ -37,7 +38,7 @@ static int colorMapBitCount(int n, uint16 *r, uint16 *g, uint16 *b)
   }
   return 8;
 }
-
+*/
 
 bool Tiff::testHeader(BYTE* header, int size)
 {
@@ -230,11 +231,11 @@ bool Tiff::load(const std::string& newFileName)
   uint32 tileWidth = 0, tileLength = 0;
   uint16 bitsPerSample = 0, samplesPerPixel = 0;
   uint32 rowsPerStrip = 0;
-  uint32 stripByteCounts = 0;
+  //uint32 stripByteCounts = 0;
   uint16 photometric = 0;
   uint16 planarConfig = 0;
   uint32 tileDepth = 0;
-  uint32 totalTilesX = 0, totalTilesY = 0;
+  //uint32 totalTilesX = 0, totalTilesY = 0;
   uint32 tileSize;
   uint32 subFileType=0;
   uint32 osubFileType=0;
@@ -246,7 +247,7 @@ bool Tiff::load(const std::string& newFileName)
   uint32 imageDepth = 0;
   char* description = 0;
 
-  struct { uint16 photometric; char const* description; } photostrings[] = { 
+  /*struct { uint16 photometric; char const* description; } photostrings[] = { 
     { PHOTOMETRIC_MINISWHITE, "Minimal is White" },
     { PHOTOMETRIC_MINISBLACK, "Minimal is Black" },
     { PHOTOMETRIC_MASK, "Hold Mask" },
@@ -258,7 +259,7 @@ bool Tiff::load(const std::string& newFileName)
     { PHOTOMETRIC_LOGL, "CIE Log2(L)" },
     { PHOTOMETRIC_LOGLUV, "CIE Log2(L) (u', v')" },
     { 0, NULL }
-  };
+  };*/
 
   //if (mValidObject)
   //    cleanup();
@@ -303,7 +304,7 @@ bool Tiff::load(const std::string& newFileName)
       TIFFGetField(mtif, TIFFTAG_IMAGEDEPTH, &imageDepth);
       toff_t dir_offset=0;
       TIFFGetField(mtif, TIFFTAG_EXIFIFD, &dir_offset);
-      int descRet=TIFFGetField(mtif, TIFFTAG_IMAGEDESCRIPTION, &description);
+      //int descRet=TIFFGetField(mtif, TIFFTAG_IMAGEDESCRIPTION, &description);
       if (dir_offset != 0)
       {
           //TIFFReadEXIFDirectory(mtif, dir_offset);
@@ -339,7 +340,7 @@ bool Tiff::load(const std::string& newFileName)
       printf("rowsPerStrip %i photometric %i\n", (int) rowsPerStrip, 
           (int) photometric);
       printf("tileDepth %i tileSize %i planarConfig %i\n", (int) tileDepth, (int) tileSize, (int) planarConfig);
-      printf("Custom Offset %i SubfileType %i OSubFileType %i SubIFD %i xRes %i yRes %i xPos %i yPos %i Image Depth %i", custom_offset, subFileType, osubFileType, subIFD, xres, yres, xpos, ypos, imageDepth);
+      printf("Custom Offset %i SubfileType %i OSubFileType %i SubIFD %i xRes %i yRes %i xPos %i yPos %i Image Depth %i", (int) custom_offset, (int) subFileType, osubFileType, subIFD, xres, yres, xpos, ypos, imageDepth);
       if (description != NULL) printf("Image Description: %s", description);
       printf("\n");
       dirCount++;
@@ -387,7 +388,6 @@ bool Tiff::load(const std::string& newFileName)
               << description << " are currently unsupported.";
           throw std::runtime_error(errMsg.str());
       }
-/*        
       if (tileWidth > 1 && tileLength > 0) 
       {
           totalTilesX = tifImageWidth / tileWidth;
@@ -441,8 +441,8 @@ bool Tiff::load(const std::string& newFileName)
                   throw std::runtime_error(errMsg.str());
               } else {
                   for (int rowToCopy = 0; rowToCopy < rowsToRead; rowToCopy++) {
-  /*                  BYTE *dest = &pBitmap[(actualHeight*paddedScanlineBytes)-
-                                          ((row+rowToCopy+1)*paddedScanlineBytes)]; */
+  //                  BYTE *dest = &pBitmap[(actualHeight*paddedScanlineBytes)-
+  //                                        ((row+rowToCopy+1)*paddedScanlineBytes)]; */
 /*                        BYTE *dest = &pBitmap[(row+rowToCopy)*paddedScanlineBytes];
                       BYTE *src = &sampleStrip[rowToCopy*unpaddedScanlineBytes];
                       if (samplesPerPixel == 3 && bitsPerSample == 8) {

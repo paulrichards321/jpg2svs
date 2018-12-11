@@ -136,7 +136,7 @@ bool Jpg::open(const std::string& newFileName, bool setGrayScale)
     mpFullBitmap = new BYTE[mactualWidth * mactualHeight * msamplesPerPixel];
     memset(mpFullBitmap, mbkgColor, mactualWidth * mactualHeight * msamplesPerPixel);
     pjSampleRows = new JSAMPROW[mactualHeight];
-    for (int y = 0; y < mactualHeight; y++)
+    for (unsigned int y = 0; y < mactualHeight; y++)
     {
       pjSampleRows[y] = &mpFullBitmap[mactualWidth * y * msamplesPerPixel];
     }
@@ -185,7 +185,7 @@ bool Jpg::open(const std::string& newFileName, bool setGrayScale)
 }
 
 
-bool Jpg::read(int x, int y, int width, int height, bool passedGrayscale)
+bool Jpg::read(unsigned int x, unsigned int y, unsigned int width, unsigned int height, bool passedGrayscale)
 {
   if (mpBitmap != 0)
   {
@@ -222,13 +222,13 @@ bool Jpg::read(int x, int y, int width, int height, bool passedGrayscale)
   }
   try
   {
-    int bitmapSize = width*height*samplesPerPixel;
-    int tileRowSize = width * samplesPerPixel;
+    unsigned int bitmapSize = width*height*samplesPerPixel;
+    unsigned int tileRowSize = width * samplesPerPixel;
     mpBitmap = new BYTE[bitmapSize];
 //    std::cout << "In jpgsupport.cpp: width=" << width << " height=" << height << " samplesPerPixel" << samplesPerPixel << std::endl;
     memset(mpBitmap, mbkgColor, bitmapSize);
-    int row=y;
-    for (int yDest=0; yDest<height && row<(y+height); yDest++) 
+    unsigned int row=y;
+    for (unsigned int yDest=0; yDest<height && row<(y+height); yDest++) 
     {
       memcpy(&mpBitmap[yDest*tileRowSize], &mpFullBitmap[(mactualWidth*row*msamplesPerPixel)+(x*msamplesPerPixel)], width*samplesPerPixel);
       row++;
@@ -249,9 +249,9 @@ bool Jpg::read(int x, int y, int width, int height, bool passedGrayscale)
 }
 
 
-bool Jpg::unbufferedRead(int x, int y, int width, int height)
+bool Jpg::unbufferedRead(unsigned int x, unsigned int y, unsigned int width, unsigned int height)
 {
-  FILE *infile;
+  FILE *infile = NULL;
   struct jpeg_decompress_struct cinfo;
   struct jpeg_error_mgr jerr;
 
@@ -352,7 +352,7 @@ bool Jpg::unbufferedRead(int x, int y, int width, int height)
         std::vector<JSAMPLE> jSamples(cinfo.output_width * 3);
         JSAMPROW pjSampleRow = &jSamples[0];
         JSAMPARRAY pjSampleArray = &pjSampleRow;
-        int yDest = 0;
+        unsigned int yDest = 0;
         while (cinfo.output_scanline < cinfo.output_height) 
         {
             jpeg_read_scanlines(&cinfo, pjSampleArray, 1);

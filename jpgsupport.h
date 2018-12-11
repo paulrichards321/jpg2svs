@@ -34,13 +34,13 @@ extern "C" {
 
 class Jpg : public Image {
 protected:
-  uint munpaddedScanlineBytes;	/* row width without padding */
+  unsigned int munpaddedScanlineBytes;	/* row width without padding */
   bool mfullReadDone;
   BYTE* mpFullBitmap;
 public:
   bool load(const std::string& newFileName);
-  bool read(int x, int y, int width, int height, bool setGrayScale = false);
-  bool unbufferedRead(int x, int y, int width, int height);
+  bool read(unsigned int x, unsigned int y, unsigned int width, unsigned int height, bool setGrayScale = false);
+  bool unbufferedRead(unsigned int x, unsigned int y, unsigned int width, unsigned int height);
   bool open(const std::string& newFileName, bool setGrayScale = false);
   void close();
   void initialize();

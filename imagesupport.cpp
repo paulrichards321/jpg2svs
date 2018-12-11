@@ -27,7 +27,7 @@ int dprintf(const char* format, ...)
   va_list ap;
   va_start(ap, format);
   cx = vsnprintf(debug, sizeof(debug)-1, format, ap);
-  printf(debug);
+  puts(debug);
   va_end(ap);
   return cx;
 }
@@ -96,7 +96,6 @@ void Image::setupPageValues(int winWidth, int winHeight)
     setPageHeight(iround(mrenderedHeight - (mrenderedHeight - winHeight)));
   //  setPageHeight(renderedHeight > winHeight ? winHeight : renderedHeight);
   int newPageHeight = iround(mrenderedHeight - (mrenderedHeight - winHeight));
-  int heightGrowth = newPageHeight - mpageHeight;
   setPageHeight(newPageHeight);
   
   // if the image is scrolled down and the window is vertically enlarged...
@@ -107,7 +106,6 @@ void Image::setupPageValues(int winWidth, int winHeight)
   if (mpageWidth == 0)
     setPageWidth(iround(mrenderedWidth - (mrenderedWidth - winWidth)));
   int newPageWidth = iround(mrenderedWidth - (mrenderedWidth - winWidth));
-  int widthGrowth = newPageWidth - mpageWidth;
   setPageWidth(newPageWidth);
 
   // if the image is scrolled to the right and the window is horizontally enlarged...
@@ -440,7 +438,7 @@ void RGBALineToRGB(BYTE *pRGBA, int RGBALineSize, BYTE *pRGB, int RGBLineSize, B
   int src, dest;
   int ialpha;
   float alpha, compalpha;
-  float gamfg, linfg, gambg, linbg, comppix, gcvideo;
+  float gamfg, gambg, comppix;
    
   /* Get max sample values in data and frame buffer */
   //255 = (1 << fg_sample_depth) - 1;

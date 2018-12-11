@@ -35,7 +35,7 @@ namespace TIFFLIB {
 
 class Tiff : public Image {
 public:
-	bool read(int, int, int, int, bool setGrayScale = false) { return false; }
+	bool read(unsigned int, unsigned int, unsigned int, unsigned int, bool setGrayScale = false) { return false; }
   bool open(const std::string&, bool setGrayScale = false) { return false; }
   bool load(const std::string& newFileName);
   bool createFile(const std::string& newFilename);

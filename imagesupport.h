@@ -55,7 +55,7 @@ int dprintf(const char* format, ...);
 
 class Image {
 protected:
-  int mactualWidth, mactualHeight, mbitCount;
+  unsigned int mactualWidth, mactualHeight, mbitCount;
   int msamplesPerPixel;
   double mrenderedWidth, mrenderedHeight;
   bool mupsideDown;
@@ -81,7 +81,7 @@ public:
   BYTE* bitmapPointer() { return mpBitmap; }
   void alignBytes();
   virtual bool open(const std::string& newFileName, bool setGrayScale = false) = 0;
-  virtual bool read(int x, int y, int width, int height, bool setGrayScale = false) = 0;
+  virtual bool read(unsigned int x, unsigned int y, unsigned int width, unsigned int height, bool setGrayScale = false) = 0;
   bool setZoomPercentage(double);
   double getZoomPercentage() { return mzoomPercentage; }
   bool writeBmp(char*);

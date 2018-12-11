@@ -15,7 +15,7 @@ public:
   void release(Jpg *pjpg);
   Jpg* open(const std::string& newFileName, bool setGrayScale);
 protected:
-  int mMaxOpen;
+  unsigned int mMaxOpen;
   std::vector<Jpg*> mjpgs;
   std::vector<bool> mGrayScaleSettings;
 };
