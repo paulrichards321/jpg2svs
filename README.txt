@@ -226,12 +226,12 @@ cp jpg2svs /usr/local/bin
 #------------------------------------------------------------------------------
 # HOW TO USE THE COMMAND LINE PROGRAM
 #------------------------------------------------------------------------------
-# syntax: jpg2svs -h[0,1] -x[bestXOffset] -y[bestYOffset] -z[0,1] <inputfolder> <outputfile> 
+# syntax: jpg2svs -h[0,1] -x[bestXOffset] -y[bestYOffset] -z[0,1] -q[0-100] <inputfolder> <outputfile> 
 # Flags:	
 # -h highlight visible areas with a black border on the top pyramid
 #    level. Default on, set to 0 to turn off.
 #	-x and -y are Optional: set best X, Y offset of image if upper and lower 
 #    pyramid levels are not aligned.
-#	-z Process Z-stack. Set to 0 to turn off. Default on if the image has one.
-#
+#	-z Process Z-stack. Set to 0 to turn off. Default off.
+# -q Set minimal jpeg quality percentage. Default 90.
 
