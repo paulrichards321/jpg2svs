@@ -203,6 +203,7 @@ public:
   double getYAdj(size_t level) { if (mValidObject && level < mConf.size() && mConf[level]->mfound) { return mConf[level]->myAdj; } else { return 1; }}
   int getTotalTiles(size_t level) { if (mValidObject && level < mConf.size() && mConf[level]->mfound) { return mConf[level]->mtotalTiles; } else { return 0; }}
   bool drawBorder(BYTE *pBuff, int samplesPerPixel, int x, int y, int width, int height, int level);
+  void blendLevels(BYTE *pDest, BYTE *pSrc, int x, int y, int width, int height, int tileWidth, int tileHeight, double xScaleOut, double yScaleOut, int srcLevel);
   std::vector<JpgFileXY>* getTileXYArray(size_t level) { if (mValidObject && level < mConf.size() && mConf[level]->mfound) { return &mConf[level]->mxyArr; } else { return NULL; }}
 
 };

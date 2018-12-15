@@ -1541,6 +1541,74 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
 }
 
 
+void CompositeSlide::blendLevels(BYTE *pDest, BYTE *pSrc, int x, int y, int width, int height, int tileWidth, int tileHeight, double xScaleOut, double yScaleOut, int srcLevel)
+{
+  if (checkLevel(srcLevel)==false) return;
+  IniConf *pLowerConf=mConf[srcLevel];
+  int fileWidth=pLowerConf->mpixelWidth;
+  int fileHeight=pLowerConf->mpixelHeight;
+  int tileSize = tileWidth * tileHeight * 3;
+
+  for (int tileNum=0; tileNum<pLowerConf->mtotalTiles; tileNum++)
+  {
+    int xCurrentPos=(int) pLowerConf->mxyArr[tileNum].mxPixel;
+    int yCurrentPos=(int) pLowerConf->mxyArr[tileNum].myPixel;
+    // first check if the x y coordinates are within the region of the bitmap
+    if (((x<xCurrentPos && x+width>xCurrentPos) || (x>=xCurrentPos && x<xCurrentPos+fileWidth)) &&
+       ((y<yCurrentPos && y+height>yCurrentPos) || (y>=yCurrentPos && y<yCurrentPos+fileHeight)))
+    {
+      int y2=yCurrentPos;
+      if (y2 < y)
+      {
+        y2 = y;
+      }
+      y2 = y2 - y;
+      int y3=yCurrentPos + fileHeight;
+      if (y3 > y+height)
+      {
+        y3 = y + height;
+      }
+      y3 = y3 - y;
+      int x2=xCurrentPos;
+      if (x2 < x)
+      {
+        x2 = x;
+      }
+      x2 = x2 - x;
+      int x3=xCurrentPos + fileWidth;
+      if (x3 > x+width)
+      {
+        x3 = x + width;
+      }
+      x3 = x3 - x;
+      int yMax = ceil((double) y3 * yScaleOut);
+      if (yMax > tileHeight) 
+      {
+        yMax=tileHeight;
+      }
+      int offset = floor((double) x2 * xScaleOut) * 3;
+      int rowSize2 = ceil((double) (x3-x2) * xScaleOut) * 3;
+      if (offset > tileWidth * 3)
+      {
+        continue;
+      }
+      if (offset + rowSize2 > tileWidth*3)
+      {
+        continue;
+      }
+      for (int y4 = floor((double) y2 * yScaleOut); y4 < yMax; y4++)
+      {
+        int offset2=(y4 * tileWidth * 3)+offset;
+        if (offset2 + rowSize2 <= tileSize)
+        {
+          memcpy(&pDest[offset2], &pSrc[offset2], rowSize2);
+        }
+      }
+    }
+  }
+}
+
+
 bool drawXHighlight(BYTE *pBmp, int samplesPerPixel, int y1, int x1, int x2, int width, int height, int thickness, int position)
 {
   if (x1 < 0 || x2 < 0 || y1 < 0)

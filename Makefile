@@ -2,7 +2,7 @@ all: jpg2svs svsinfo
 .PHONY: all
 
 CXX=g++
-SLIDE_CFLAGS= 
+SLIDE_CFLAGS= -Wall
 OPENCVLIB=/usr/lib64
 OPENCV_LFLAGS=-L$(OPENCVLIB) -lopencv_core -lopencv_highgui -lopencv_features2d -lopencv_imgcodecs -lopencv_imgproc
 SLIDE_LFLAGS=-ljpeg -ltiff $(OPENCV_LFLAGS) -L/usr/lib 

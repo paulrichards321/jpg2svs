@@ -330,7 +330,9 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
             cv::Size scaledSize(256, 256);
             cv::resize(imgSrc, imgScaled2, scaledSize, xScaleReverseL2, yScaleReverseL2);
             imgSrc.release();
-            fillTile(pBitmap2, imgScaled2.data, 256, 256, 8, 8, bkgColor);
+            slide->blendLevels(imgScaled2.data, pBitmap2, xSrc, ySrc, grabWidth, grabHeight, 256, 256, xScaleReverse, yScaleReverse, level); 
+            pBitmap2=imgScaled2.data;
+            //fillTile(pBitmap2, imgScaled2.data, 256, 256, 8, 8, bkgColor);
             //simpleFillTile(pBitmap2, imgScaled2.data, 256, 256, bkgColor);
           } 
         } 
