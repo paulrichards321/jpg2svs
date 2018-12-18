@@ -1253,6 +1253,7 @@ bool CompositeSlide::read(BYTE *pBmp, int level, int direction, int zLevel, int 
 
 bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, int width, int height, int level)
 {
+  if (checkLevel(level)==false) return false;
   IniConf *pHigherConf=mConf[level];
   const int default_thickness=8;
   //std::ofstream logFile("drawBorder.log", std::ios::out | std::ofstream::app);
@@ -1304,7 +1305,7 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
         //********************************************************************
         // first check for left border
         //********************************************************************
-        if (((xCurrentPos>xCurrentPos2 && xCurrentPos2+fileWidth+1>=xCurrentPos) &&
+        if (((xCurrentPos>xCurrentPos2 && xCurrentPos2+fileWidth>=xCurrentPos) &&
             ((yCurrentPos<yCurrentPos2 && yCurrentPos+fileHeight>yCurrentPos2) 
          ||  (yCurrentPos>=yCurrentPos2 && yCurrentPos<yCurrentPos2+fileHeight))))
         {
@@ -1328,7 +1329,7 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
         //********************************************************************
         // check for right border
         //********************************************************************
-        if (((xCurrentPos<xCurrentPos2 && xCurrentPos+fileWidth+1>=xCurrentPos2) &&
+        if (((xCurrentPos<xCurrentPos2 && xCurrentPos+fileWidth>=xCurrentPos2) &&
             ((yCurrentPos<yCurrentPos2 && yCurrentPos+fileHeight>yCurrentPos2) || (yCurrentPos>=yCurrentPos2 && yCurrentPos<yCurrentPos2+fileHeight))))
         {
           if (yCurrentPos2 < yCurrentPos)
@@ -1351,9 +1352,13 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
         //**********************************************************************
         // check for top border
         //**********************************************************************
+/*
         if (((xCurrentPos<=xCurrentPos2 && xCurrentPos+fileWidth+3>=xCurrentPos2) ||
              (xCurrentPos>=xCurrentPos2 && xCurrentPos2+fileWidth+3>=xCurrentPos)) &&
-            (yCurrentPos>yCurrentPos2 && yCurrentPos<=yCurrentPos2+fileHeight+3))
+            (yCurrentPos>yCurrentPos2 && yCurrentPos<=yCurrentPos2+fileHeight+3))*/
+        if (((xCurrentPos<=xCurrentPos2 && xCurrentPos+fileWidth>=xCurrentPos2) ||
+             (xCurrentPos>=xCurrentPos2 && xCurrentPos2+fileWidth>=xCurrentPos)) &&
+            (yCurrentPos>yCurrentPos2 && yCurrentPos<=yCurrentPos2+fileHeight))
         {
           if (xCurrentPos2 < xCurrentPos)
           {
@@ -1375,9 +1380,14 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
         //**********************************************************************
         // check for bottom border
         //**********************************************************************
+/*
         if (((xCurrentPos<=xCurrentPos2 && xCurrentPos+fileWidth+3>=xCurrentPos2) ||
              (xCurrentPos>=xCurrentPos2 && xCurrentPos2+fileWidth+3>=xCurrentPos)) &&
-             (yCurrentPos2>yCurrentPos && yCurrentPos+fileHeight+3>=yCurrentPos2))
+             (yCurrentPos2>yCurrentPos && yCurrentPos+fileHeight+3>=yCurrentPos2))*/
+
+        if (((xCurrentPos<=xCurrentPos2 && xCurrentPos+fileWidth>=xCurrentPos2) ||
+             (xCurrentPos>=xCurrentPos2 && xCurrentPos2+fileWidth>=xCurrentPos)) &&
+             (yCurrentPos2>yCurrentPos && yCurrentPos+fileHeight>=yCurrentPos2))
         {
           if (xCurrentPos2 < xCurrentPos)
           {
@@ -1581,13 +1591,13 @@ void CompositeSlide::blendLevels(BYTE *pDest, BYTE *pSrc, int x, int y, int widt
         x3 = x + width;
       }
       x3 = x3 - x;
-      int yMax = ceil((double) y3 * yScaleOut);
+      int yMax = (int) lround((double) y3 * yScaleOut);
       if (yMax > tileHeight) 
       {
         yMax=tileHeight;
       }
-      int offset = floor((double) x2 * xScaleOut) * 3;
-      int rowSize2 = ceil((double) (x3-x2) * xScaleOut) * 3;
+      int offset = (int) lround((double) x2 * xScaleOut) * 3;
+      int rowSize2 = (int) lround((double) (x3-x2) * xScaleOut) * 3;
       if (offset > tileWidth * 3)
       {
         continue;
@@ -1596,7 +1606,7 @@ void CompositeSlide::blendLevels(BYTE *pDest, BYTE *pSrc, int x, int y, int widt
       {
         continue;
       }
-      for (int y4 = floor((double) y2 * yScaleOut); y4 < yMax; y4++)
+      for (int y4 = (int) lround((double) y2 * yScaleOut); y4 < yMax; y4++)
       {
         int offset2=(y4 * tileWidth * 3)+offset;
         if (offset2 + rowSize2 <= tileSize)
@@ -1613,8 +1623,8 @@ bool drawXHighlight(BYTE *pBmp, int samplesPerPixel, int y1, int x1, int x2, int
 {
   if (x1 < 0 || x2 < 0 || y1 < 0)
   {
-    std::cerr << "Warning: drawYHighlight: parameters out of bound!" << std::endl;
-    std::cerr << " y1=" << y1 << " x1=" << x1 << " x2=" << x2 << " width=" << width << " height=" << height << std::endl;
+    //std::cerr << "Warning: drawYHighlight: parameters out of bound!" << std::endl;
+    //std::cerr << " y1=" << y1 << " x1=" << x1 << " x2=" << x2 << " width=" << width << " height=" << height << std::endl;
     return false;
   }
   if (x1 > x2)
@@ -1625,8 +1635,8 @@ bool drawXHighlight(BYTE *pBmp, int samplesPerPixel, int y1, int x1, int x2, int
   }
   if (x2 > width)
   {
-    std::cerr << "Warning: drawXHighlight: parameters out of bound!" << std::endl;
-    std::cerr << " y1=" << y1 << " x1=" << x1 << " x2=" << x2 << " width=" << width << " height=" << height << std::endl;
+    //std::cerr << "Warning: drawXHighlight: parameters out of bound!" << std::endl;
+    //std::cerr << " y1=" << y1 << " x1=" << x1 << " x2=" << x2 << " width=" << width << " height=" << height << std::endl;
     return false;
   }
   int bmpSize = width * height * samplesPerPixel;

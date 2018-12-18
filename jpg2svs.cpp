@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <ctime>
 #include <cstdlib>
 #include <cctype>
+#include <unistd.h>
 #if defined(_WIN32) || defined(_WIN64)
 #include "console-mswin.h"
 #else
@@ -30,10 +31,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 #include "tiffsupport.h"
 #include "composite.h"
-
-void fillTile(BYTE *pDest, BYTE *pSrc, int tileWidth, int tileHeight, int subTileWidth, int subTileHeight, BYTE bkgColor);
-void simpleFillTile(BYTE *pDest, BYTE *pSrc, int tileWidth, int tileHeight, BYTE bkgColor);
-
 
 class SlideConvertor
 {
@@ -44,6 +41,7 @@ protected:
   std::string errMsg;
   int mBaseTotalWidth, mBaseTotalHeight;
   bool mValidObject;
+  bool mBlendTopLevel;
   bool mIncludeZStack;
   int mQuality;
   int mStep, mZSteps;
@@ -53,7 +51,7 @@ public:
   ~SlideConvertor() { closeRelated(); }
   void closeRelated();
   std::string getErrMsg() { return errMsg; }
-  int open(std::string inputFile, std::string outputFile, bool markOutline, bool includeZStack, int quality, int bestXOffset = -1, int bestYOffset = -1);
+  int open(std::string inputFile, std::string outputFile, bool blendTopLevel, bool markOutline, bool includeZStack, int quality, int bestXOffset = -1, int bestYOffset = -1);
   int convert();
   int outputLevel(int level, bool tiled, int direction, int zLevel, int magnification);
 };
@@ -89,7 +87,6 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   double xScale=0.0, yScale=0.0;
   double xScaleL2=0.0, yScaleL2=0.0;
   double xScaleReverse=0.0, yScaleReverse=0.0;
-  double xScaleReverseL2=0.0, yScaleReverseL2=0.0;
   int grabWidth=0, grabHeight=0;
   int grabWidthL2=0, grabHeightL2=0;
   BYTE* pSizedBitmap = 0;
@@ -157,10 +154,8 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
 
     xScaleL2=(double) srcTotalWidthL2 / (double) destTotalWidth;
     yScaleL2=(double) srcTotalHeightL2 / (double) destTotalHeight;
-    xScaleReverseL2=(double) destTotalWidth / (double) srcTotalWidthL2;
-    yScaleReverseL2=(double) destTotalHeight / (double) srcTotalHeightL2;
-    grabWidthL2=(int)ceil(256.0 * xScaleL2);
-    grabHeightL2=(int)ceil(256.0 * yScaleL2);
+    grabWidthL2=(int)round(256.0 * xScaleL2);
+    grabHeightL2=(int)round(256.0 * yScaleL2);
   }
   else
   {
@@ -174,16 +169,14 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
     yScale=(double) srcTotalHeight / (double) destTotalHeight;
     xScaleReverse=(double) destTotalWidth / (double) srcTotalWidth;
     yScaleReverse=(double) destTotalHeight / (double) srcTotalHeight;
-    grabWidth=(int)ceil(256.0 * xScale);
-    grabHeight=(int)ceil(256.0 * yScale);
+    grabWidth=(int)round(256.0 * xScale);
+    grabHeight=(int)round(256.0 * yScale);
 
-    xScaleL2=((double) srcTotalWidthL2 / (double) destTotalWidth) / ((double) srcTotalWidth / (double) destTotalWidth);
-    yScaleL2=((double) srcTotalHeightL2 / (double) destTotalHeight) / ((double) srcTotalHeight / (double) destTotalHeight);
-    xScaleReverseL2=((double) destTotalWidth / (double) srcTotalWidthL2) / 2;
-    yScaleReverseL2=((double) destTotalHeight / (double) srcTotalHeightL2) / 2;
+    xScaleL2=(double) srcTotalWidthL2 / (double) srcTotalWidth;
+    yScaleL2=(double) srcTotalHeightL2 / (double) srcTotalHeight;
  
-    grabWidthL2=(int)ceil(256.0 * (double) srcTotalWidthL2 / (double) destTotalWidth);
-    grabHeightL2=(int)ceil(256.0 * (double) srcTotalHeightL2 / (double) destTotalHeight);
+    grabWidthL2=(int)round(256.0 * (double) srcTotalWidthL2 / (double) destTotalWidth);
+    grabHeightL2=(int)round(256.0 * (double) srcTotalHeightL2 / (double) destTotalHeight);
   }
   *logFile << " xScale=" << xScale << " yScale=" << yScale;
   *logFile << " srcTotalWidth=" << srcTotalWidth << " srcTotalHeight=" << srcTotalHeight;
@@ -239,6 +232,7 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   int readWidthL2=0;
   int readHeightL2=0;
   bool readOkL2=false;
+  int L2Size=0;
   if (pBitmapL2)
   {
     readOkL2=slide->read(pBitmapL2, 2, 0, 0, 0, 0, srcTotalWidthL2, srcTotalHeightL2, false, &readWidthL2, &readHeightL2);
@@ -253,13 +247,13 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
     for (int xSrc=0; xSrc<srcTotalWidth && xDest<destTotalWidth && error==false; xSrc += grabWidth) 
     {
       bool toSmall = false;
-      //*logFile << " slide->read(x=" << xSrc << " y=" << ySrc << " grabWidth=" << grabWidth << " grabHeight=" << grabHeight << " level=" << i << "); " << std::endl;
       BYTE *pBitmap1 = slide->allocate(level, xSrc, ySrc, grabWidth, grabHeight, false);
       BYTE *pBitmap2 = pBitmap1;
       int readWidth=0, readHeight=0;
       bool readOk=false;
       if (pBitmap1)
       {
+        *logFile << " slide->read(x=" << xSrc << " y=" << ySrc << " grabWidth=" << grabWidth << " grabHeight=" << grabHeight << " level=" << level << "); " << std::endl;
         readOk=slide->read(pBitmap2, level, readDirection, readZLevel, xSrc, ySrc, grabWidth, grabHeight, false, &readWidth, &readHeight);
       }
       if (readOk)
@@ -294,46 +288,43 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
           cv::resize(imgSrc, imgScaled, scaledSize, xScaleReverse, yScaleReverse);
           imgSrc.release();
           pBitmap2 = imgScaled.data;  
-          /*
-          srcPixBuf = gdk_pixbuf_new_from_data((guchar*) pBitmap2, GDK_COLORSPACE_RGB, FALSE, 8, grabWidth, grabHeight, grabWidth*3, NULL, NULL);
-          destPixBuf = gdk_pixbuf_scale_simple(srcPixBuf, 256, 256, GDK_INTERP_BILINEAR);
-          if (destPixBuf != 0)
-          {
-            pBitmap2 = (BYTE*) gdk_pixbuf_read_pixels(destPixBuf);
-            scaled = true;
-          }
-          else if (srcPixBuf != 0)
-          {
-            g_object_unref(srcPixBuf);
-          }
-          */
         }
         if (readOkL2)
         {
-          int xSrcStartL2=ceil((double) xSrc * xScaleL2);
-          int ySrcStartL2=ceil((double) ySrc * yScaleL2);
+          int xSrcStartL2=round((double) xSrc * xScaleL2);
+          int ySrcStartL2=round((double) ySrc * yScaleL2);
           int xSrcEndL2=xSrcStartL2 + grabWidthL2;
           int ySrcEndL2=ySrcStartL2 + grabHeightL2;
-          if (xSrcEndL2 > srcTotalWidthL2) xSrcEndL2=srcTotalWidthL2;
-          if (ySrcEndL2 > srcTotalHeightL2) ySrcEndL2=srcTotalHeightL2;
-          int readWidthL2=xSrcEndL2 - xSrcStartL2;
-          int readHeightL2=ySrcEndL2 - ySrcStartL2;
-          if (xSrcStartL2 >= 0 && xSrcStartL2 < srcTotalWidthL2 && ySrcStartL2 >= 0 && ySrcStartL2 < srcTotalHeightL2)
+          if (xSrcEndL2 > readWidthL2) xSrcEndL2=readWidthL2;
+          if (ySrcEndL2 > readHeightL2) ySrcEndL2=readHeightL2;
+          int grabWidth2=xSrcEndL2 - xSrcStartL2;
+          int grabHeight2=ySrcEndL2 - ySrcStartL2;
+          int rowSize = grabWidthL2 * 3;
+          int copySize = grabWidth2 * 3;
+          int tileSize = rowSize * grabHeightL2;
+          if (magnification==32 && level==1)
           {
-            pBitmap3 = new BYTE[readHeightL2 * readWidthL2 * 3];
-            memset(pBitmap3, bkgColor, readHeightL2*readWidthL2*3);
-            for (int row=0; row < readHeightL2; row++)
+            *logFile << " xSrc=" << xSrc << " xSrcStartL2=" << xSrcStartL2 << " ySrc=" << ySrc << " ySrcStartL2=" << ySrcStartL2 << " grabWidthL2=" << grabWidthL2 << " grabHeightL2=" << grabHeightL2 << std::endl;
+          }
+          if (xSrcStartL2 >= 0 && xSrcStartL2 < readWidthL2 && ySrcStartL2 >= 0 && ySrcStartL2 < readHeightL2)
+          {
+            pBitmap3 = new BYTE[tileSize];
+            memset(pBitmap3, bkgColor, tileSize);
+            for (int row=0; row < grabHeight2; row++)
             {
-              memcpy(&pBitmap3[row*readWidthL2*3], &pBitmapL2[((ySrcStartL2+row)*srcTotalWidthL2*3)+(xSrcStartL2*3)], readWidthL2*3);
+              int offset3 = row*rowSize;
+              int offset4 = ((ySrcStartL2+row)*readWidthL2*3)+(xSrcStartL2*3);
+              if (offset3 + copySize <= tileSize && offset4 + copySize <= L2Size)
+              {
+                memcpy(&pBitmap3[offset3], &pBitmapL2[offset4], copySize);
+              }
             }
-            cv::Mat imgSrc(readHeightL2, readWidthL2, CV_8UC3, pBitmap3);
+            cv::Mat imgSrc(grabHeightL2, grabWidthL2, CV_8UC3, pBitmap3);
             cv::Size scaledSize(256, 256);
-            cv::resize(imgSrc, imgScaled2, scaledSize, xScaleReverseL2, yScaleReverseL2);
+            cv::resize(imgSrc, imgScaled2, scaledSize, 0, 0);
             imgSrc.release();
             slide->blendLevels(imgScaled2.data, pBitmap2, xSrc, ySrc, grabWidth, grabHeight, 256, 256, xScaleReverse, yScaleReverse, level); 
             pBitmap2=imgScaled2.data;
-            //fillTile(pBitmap2, imgScaled2.data, 256, 256, 8, 8, bkgColor);
-            //simpleFillTile(pBitmap2, imgScaled2.data, 256, 256, bkgColor);
           } 
         } 
         bool writeOk=false;
@@ -428,73 +419,29 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
 }
 
 
-void simpleFillTile(BYTE *pDest, BYTE *pSrc, int tileWidth, int tileHeight, BYTE bkgColor)
-{
-  int offset=tileHeight*tileWidth*3;
-  BYTE *pSrcEnd=pSrc+offset;
-  while (pSrc < pSrcEnd) 
-  {
-    if (pDest[0] == bkgColor && pDest[1] == bkgColor && pDest[2] == bkgColor)
-    {
-      pDest[0] = pSrc[0];
-      pDest[1] = pSrc[1];
-      pDest[2] = pSrc[2];
-    }
-    pSrc += 3;
-    pDest += 3;
-  }
-}
-
-
-void fillTile(BYTE *pDest, BYTE *pSrc, int tileWidth, int tileHeight, int subTileWidth, int subTileHeight, BYTE bkgColor)
-{
-  int rowSize=tileWidth * 3;
-  int subRowSize = subTileWidth * 3;
-  for (int y1 = 0; y1 < tileHeight; y1 += subTileHeight)
-  {
-    for (int x1 = 0; x1 < rowSize; x1 += subRowSize)
-    {
-      int y3=y1+subTileHeight;
-      bool set_bkg = true;
-      for (int y2=y1; y2 < y3 && set_bkg; y2++)
-      {
-        BYTE *pDest2=&pDest[(y2*rowSize)+x1];
-        BYTE *pDestEnd=pDest2+subRowSize;
-        while (pDest2 < pDestEnd)
-        {
-          if (pDest2[0] != bkgColor || pDest2[1] != bkgColor || pDest2[2] != bkgColor)
-          {
-            set_bkg = false;
-            break;
-          }
-          pDest2 += 3;
-        }
-      }
-      if (set_bkg)
-      {
-        for (int y2=y1; y2 < y3; y2++)
-        {
-          int offset=(y2*rowSize)+x1;
-          BYTE *pSrc2=pSrc+offset;
-          BYTE *pSrcEnd=pSrc2+subRowSize;
-          BYTE *pDest2=pDest+offset;
-          while (pSrc2 < pSrcEnd) 
-          {
-            pDest2[0] = pSrc2[0];
-            pDest2[1] = pSrc2[1];
-            pDest2[2] = pSrc2[2];
-            pSrc2 += 3;
-            pDest2 += 3;
-          }
-        }
-      }
-    }
-  }
-}
-
-
 int SlideConvertor::convert()
 {
+  //----------------------------------------------------------------------
+  // Below three blocks for blending the middle level into the top level
+  //----------------------------------------------------------------------
+  int smallBlendLevels[] =          {  0,  2,  1,   1,   1 };
+  int smallBlendMagnifyLevels[] =   {  1,  64,  4,  16,  32 };
+  int bigBlendLevels[] =            {  0,  3,  1,   1,   1,   1 };
+  int bigBlendMagnifyLevels[] =     {  1,  1,  4,  16,  64, 128 };
+  
+  int smallBlendZLevels1[] =        {  0,  2,  0,   1,   1 };
+  int smallBlendZMagnifyLevels1[] = {  1,  64,  4,  16,  32 };
+  int smallBlendZLevels2[] =        {  0,  0,  1,   1 };
+  int smallBlendZMagnifyLevels2[] = {  1,  4, 16,  32 };
+
+  int bigBlendZLevels1[] =          {  0,  2,  0,   1,   1,   1 };
+  int bigBlendZMagnifyLevels1[] =   {  1,  256,  4,  16,  64, 128 };
+  int bigBlendZLevels2[] =          {  0,  0,  1,   1,   1 };
+  int bigBlendZMagnifyLevels2[] =   {  1,  4, 16,  64, 128 };
+
+  //----------------------------------------------------------------------
+  // Below three blocks for NOT blending the middle level into the top level
+  //----------------------------------------------------------------------
   int smallLevels[] =          {  0,  2,  1,   1,   2 };
   int smallMagnifyLevels[] =   {  1,  64,  4,  16,  32 };
   int bigLevels[] =            {  0,  3,  1,   1,   2,   2 };
@@ -523,14 +470,30 @@ int SlideConvertor::convert()
     if (mBaseTotalWidth >= 140000 || mBaseTotalHeight >= 140000)
     {
       totalLevels1 = 6;
-      levels1 = bigLevels;
-      magnifyLevels1 = bigMagnifyLevels;
+      if (mBlendTopLevel)
+      {
+        levels1 = bigBlendLevels;
+        magnifyLevels1 = bigBlendMagnifyLevels;
+      }
+      else
+      {
+        levels1 = bigLevels;
+        magnifyLevels1 = bigMagnifyLevels;
+      }
     }
     else
     {
       totalLevels1 = 5;
-      levels1 = smallLevels;
-      magnifyLevels1 = smallMagnifyLevels;
+      if (mBlendTopLevel)
+      {
+        levels1 = smallBlendLevels;
+        magnifyLevels1 = smallBlendMagnifyLevels;
+      }
+      else
+      {
+        levels1 = smallLevels;
+        magnifyLevels1 = smallMagnifyLevels;
+      }
     }
     //****************************************************************
     // Output the base level, thumbnail, 4x, 16x, and 32x levels 
@@ -550,21 +513,42 @@ int SlideConvertor::convert()
     {
       totalLevels1 = 6;
       totalLevels2 = 5;
-      levels1 = bigZLevels1;
-      levels2 = bigZLevels2;
-      magnifyLevels1 = bigZMagnifyLevels1;
-      magnifyLevels2 = bigZMagnifyLevels2;
+      if (mBlendTopLevel)
+      {
+        levels1 = bigBlendZLevels1;
+        levels2 = bigBlendZLevels2;
+        magnifyLevels1 = bigBlendZMagnifyLevels1;
+        magnifyLevels2 = bigBlendZMagnifyLevels2;
+      }
+      else
+      {
+        levels1 = bigZLevels1;
+        levels2 = bigZLevels2;
+        magnifyLevels1 = bigZMagnifyLevels1;
+        magnifyLevels2 = bigZMagnifyLevels2;
+      }
     }
     else
     {
-      totalLevels1 = 5;
-      totalLevels2 = 4;
-      levels1 = smallZLevels1;
-      levels2 = smallZLevels2;
-      magnifyLevels1 = smallZMagnifyLevels1;
-      magnifyLevels2 = smallZMagnifyLevels2;
+      if (mBlendTopLevel)
+      {
+        totalLevels1 = 5;
+        totalLevels2 = 4;
+        levels1 = smallBlendZLevels1;
+        levels2 = smallBlendZLevels2;
+        magnifyLevels1 = smallBlendZMagnifyLevels1;
+        magnifyLevels2 = smallBlendZMagnifyLevels2;
+      }
+      else
+      {
+        totalLevels1 = 5;
+        totalLevels2 = 4;
+        levels1 = smallZLevels1;
+        levels2 = smallZLevels2;
+        magnifyLevels1 = smallZMagnifyLevels1;
+        magnifyLevels2 = smallZMagnifyLevels2;
+      }
     }
- 
     int totalBottomZLevels = slide->getTotalBottomZLevels();
     int totalTopZLevels = slide->getTotalTopZLevels();
     int firstDirection;
@@ -624,7 +608,7 @@ int SlideConvertor::convert()
 }
 
 
-int SlideConvertor::open(std::string inputFile, std::string outputFile, bool markOutline, bool includeZStack, int quality, int bestXOffset, int bestYOffset)
+int SlideConvertor::open(std::string inputFile, std::string outputFile, bool blendTopLevel, bool markOutline, bool includeZStack, int quality, int bestXOffset, int bestYOffset)
 {
   closeRelated();
   logFile = new std::ofstream("jpg2svs.log");
@@ -651,6 +635,7 @@ int SlideConvertor::open(std::string inputFile, std::string outputFile, bool mar
   }
   mStep=0;
   mLastZLevel=-1;
+  mBlendTopLevel = blendTopLevel;
   mIncludeZStack = includeZStack;
   mQuality = quality;
   if (mBaseTotalWidth > 0 && mBaseTotalHeight > 0)
@@ -693,101 +678,138 @@ void SlideConvertor::closeRelated()
 }
 
 
+bool getBoolOpt(const char *optarg, bool& invalidOpt)
+{
+  const char *available[14] = { 
+    "1", 
+    "true", "TRUE", 
+    "enable", "ENABLE", 
+    "on", "ON", 
+    "0", 
+    "false", "FALSE", 
+    "disable", "DISABLE", 
+    "off", "OFF" 
+  };
+  if (optarg == NULL) 
+  {
+    invalidOpt = true;
+    return false;
+  }
+  std::string optarg2 = optarg;
+  for (int i = 0; i < 14; i++)
+  {
+    if (optarg2.find(available[i]) != std::string::npos)
+    {
+      if (i < 7) return true;
+      else return false;
+    }
+  }
+  invalidOpt = true;
+  return false;
+}
+
+
+int getIntOpt(const char *optarg, bool& invalidOpt)
+{
+  unsigned int i=0;
+  if (optarg==NULL)
+  {
+    invalidOpt = true;
+    return 0;
+  }
+  std::string optarg2 = optarg;
+  while (i < optarg2.length() && (optarg2[i]==' ' || optarg2[i]==':' || optarg2[i]=='=' || optarg2[i]=='\t')) i++;
+  optarg2 = optarg2.substr(i);
+  if (optarg2.length() > 0 && isdigit(optarg2[0]))
+  {
+    return atoi(optarg2.c_str());
+  }
+  invalidOpt = true;
+  return 0;
+}
+
+
 int main(int argc, char** argv)
 {
   SlideConvertor slideConv;
   int error=0;
-  char *infile = 0, *outfile = 0;
+  std::string infile, outfile;
   int bestXOffset = -1, bestYOffset = -1;
+  bool blendTopLevel = true;
   bool doBorderHighlight = true;
   bool includeZStack = false;
   int quality = 90;
-  char syntax[] = "syntax: jpg2svs -h[0,1] -x[bestXOffset] -y[bestYOffset] -z[0,1] <inputfolder> <outputfile> \nFlags:\t-h highlight visible areas with a black border on the top pyramid level. Default off.\n\t-x and -y Optional: set best X, Y offset of image if upper and lower pyramid levels are not aligned.\n\t-z Process Z-stack. Set to 0 to turn off. Default on if the image has one.\n\t-q Set minimal jpeg quality percentage. Default 90.\n";
+  char syntax[] = "syntax: jpg2svs -b=[on,off] -h=[on,off] -x=[bestXOffset] -y=[bestYOffset] -z=[on,off] <inputfolder> <outputfile> \nFlags:\t-b blend the top level with the middle level. Default on.\n\t-h highlight visible areas with a black border. Default on.\n\t-q Set minimal jpeg quality percentage. Default 90.\n\t-x and -y Optional: set best X, Y offset of image if upper and lower pyramid levels are not aligned.\n\t-z Process Z-stack if the image has one. Default off.\n";
 
   if (argc < 3)
   {
     std::cerr << syntax;
     return 1;
   }
-  
-  for (int arg=1; arg < argc; arg++)
+  int opt;
+  bool invalidOpt = false;
+  while((opt = getopt(argc, argv, "b:h:q:x:y:z:")) != -1)
   {
-    if (argv[arg][0] == '-')
+    if (optarg != NULL) std::cout << " optarg=" << optarg << std::endl;
+    switch (opt)
     {
-      if (strlen(argv[arg]) < 3)
-      {
-        std::cerr << syntax;
-        return 1;
-      }
-      if (argv[arg][1] == 'h')
-      {
-        if (argv[arg][2] == '0')
+      case 'b':
+        blendTopLevel = getBoolOpt(optarg, invalidOpt);
+        break;
+      case 'h':
+        doBorderHighlight = getBoolOpt(optarg, invalidOpt);
+        break;
+      case 'q':
+        quality = getIntOpt(optarg, invalidOpt);
+        break;
+      case 'x':
+        bestXOffset = getIntOpt(optarg, invalidOpt);
+        break;
+      case 'y':
+        bestYOffset = getIntOpt(optarg, invalidOpt);
+        break;
+      case 'z':
+        includeZStack = getBoolOpt(optarg, invalidOpt);
+        break;
+      case '?':
+        if (infile.length() == 0)
         {
-          doBorderHighlight = false;
+          infile=optarg;
         }
-        else if (argv[arg][2] == '1')
+        else if (outfile.length() == 0)
         {
-          doBorderHighlight = true;
-        }
-        else
-        {
-          std::cerr << syntax;
-          return 1;
-        }
-      }
-      else if (argv[arg][1] == 'q')
-      {
-        quality = atoi(&argv[arg][2]);
-      }
-      else if (argv[arg][1] == 'x')
-      {
-        bestXOffset = atoi(&argv[arg][2]);  
-      }
-      else if (argv[arg][1] == 'y')
-      {
-        bestYOffset = atoi(&argv[arg][2]);
-      }
-      else if (argv[arg][1] == 'z')
-      {
-        if (argv[arg][2] == '0')
-        {
-          includeZStack = false;
-        }
-        else if (argv[arg][2] == '1')
-        {
-          includeZStack = true;
+          outfile=optarg;
         }
         else
         {
-          std::cerr << syntax;
-          return 1;
+          invalidOpt = true;
         }
-      }
-      else
-      {
-        std::cerr << syntax;
-        return 1;
-      }
+        break;
     }
-    else
+    if (invalidOpt)
     {
-      if (infile == 0)
-      {
-        infile=argv[arg];
-      }
-      else if (outfile == 0) 
-      {
-        outfile=argv[arg];
-      }
+      std::cerr << syntax;
+      return 1;
+    } 
+  }
+  for (; optind < argc; optind++)
+  {
+    if (infile.length() == 0)
+    {
+      infile=argv[optind];
+    }
+    else if (outfile.length() == 0)
+    {
+      outfile=argv[optind];
     }
   }
-  if (infile == 0 || outfile == 0)
+  if (infile.length() == 0 || outfile.length() == 0)
   {
     std::cerr << syntax;
     return 1;
   }
   
-  error=slideConv.open(infile, outfile, doBorderHighlight, includeZStack, quality, bestXOffset, bestYOffset);
+  error=slideConv.open(infile.c_str(), outfile.c_str(), blendTopLevel, doBorderHighlight, includeZStack, quality, bestXOffset, bestYOffset);
   if (error==0)
   {
     error=slideConv.convert();
@@ -796,11 +818,11 @@ int main(int argc, char** argv)
   {
     if (error==1)
     {
-      std::cerr << "Failed to open " << argv[1] << std::endl;
+      std::cerr << "Failed to open " << infile << std::endl;
     }
     else if (error==2)
     {
-      std::cerr << "Failed to create tif " << argv[2] << ": " << slideConv.getErrMsg() << std::endl;
+      std::cerr << "Failed to create tif " << outfile << ": " << slideConv.getErrMsg() << std::endl;
     }
     else if (error==3)
     {
