@@ -582,7 +582,18 @@ bool CompositeSlide::open(const std::string& srcFileName, bool setGrayScale, boo
     }
   }
 
-  std::sort(mConf.begin(), mConf.end(), JpgFileXYSortForXAdj());
+  bool iniSortByAdj=true;
+  for (int i=0; i<4; i++)
+  {
+    if (mConf[i]->mfound==false || mConf[i]->mxAdj==0 || mConf[i]->myAdj==0)
+    {
+      iniSortByAdj=false;
+    }
+  }
+  if (iniSortByAdj)
+  {
+    std::sort(mConf.begin(), mConf.end(), JpgFileXYSortForXAdj());
+  }
 //  std::cout << "!!!!!!!!!!!!!!!! xMax (of all)=" << xMax << " yMax (of all)=" << yMax << std::endl;
   
   //*******************************************************************
@@ -1114,7 +1125,7 @@ bool CompositeSlide::read(BYTE *pBmp, int level, int direction, int zLevel, int 
   //int originalHeight=height;
   *pReadWidth = 0;
   *pReadHeight = 0;
-  if (checkZLevel(level, direction, zLevel)==false)
+  if (checkZLevel(level, direction, zLevel)==false || checkLevel(level)==false)
   {
     return false;
   }
