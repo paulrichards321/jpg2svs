@@ -181,6 +181,7 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   *logFile << " xScale=" << xScale << " yScale=" << yScale;
   *logFile << " srcTotalWidth=" << srcTotalWidth << " srcTotalHeight=" << srcTotalHeight;
   *logFile << " destTotalWidth=" << destTotalWidth << " destTotalHeight=" << destTotalHeight;
+  *logFile << " srcTotalWidthL2=" << srcTotalWidthL2 << " srcTotalHeightL2=" << srcTotalHeightL2;
   *logFile << std::endl;
   int quality=slide->getQuality(level);
   if (quality<mQuality || quality<=0)
@@ -221,9 +222,11 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   std::cout << "0% done...    " << std::flush;
 
   BYTE *pBitmapL2 = NULL;
+
+  int L2Size=srcTotalWidthL2 * srcTotalHeightL2 * 3;
   if (fillin)
   {
-    pBitmapL2 = new BYTE[srcTotalWidthL2 * srcTotalHeightL2 * 3];
+    pBitmapL2 = new BYTE[L2Size];
     if (pBitmapL2==NULL)
     {
       *logFile << "Failed to allocate memory for full pyramid level 2. Out of memory?" << std::endl;
@@ -232,7 +235,6 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   int readWidthL2=0;
   int readHeightL2=0;
   bool readOkL2=false;
-  int L2Size=0;
   if (pBitmapL2)
   {
     readOkL2=slide->read(pBitmapL2, 2, 0, 0, 0, 0, srcTotalWidthL2, srcTotalHeightL2, false, &readWidthL2, &readHeightL2);
@@ -321,7 +323,7 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
             }
             cv::Mat imgSrc(grabHeightL2, grabWidthL2, CV_8UC3, pBitmap3);
             cv::Size scaledSize(256, 256);
-            cv::resize(imgSrc, imgScaled2, scaledSize, 0, 0);
+            cv::resize(imgSrc, imgScaled2, scaledSize, (double) destTotalWidth / (double) srcTotalWidthL2, (double) destTotalHeight / (double) srcTotalHeightL2);
             imgSrc.release();
             slide->blendLevels(imgScaled2.data, pBitmap2, xSrc, ySrc, grabWidth, grabHeight, 256, 256, xScaleReverse, yScaleReverse, level); 
             pBitmap2=imgScaled2.data;
