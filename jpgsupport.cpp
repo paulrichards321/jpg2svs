@@ -167,7 +167,7 @@ bool Jpg::open(const std::string& newFileName, bool setGrayScale)
     }
     return false;
   } 
-  catch (std::bad_alloc) 
+  catch (std::bad_alloc &e) 
   {
     mpFullBitmap = 0;
     jpeg_destroy_decompress(&cinfo);
@@ -237,7 +237,7 @@ bool Jpg::read(unsigned int x, unsigned int y, unsigned int width, unsigned int 
     mreadWidth=width;
     mValidObject = true;
   }
-  catch (std::bad_alloc) 
+  catch (std::bad_alloc &e) 
   {
     mpBitmap = 0;
     cleanup();
@@ -428,7 +428,7 @@ bool Jpg::unbufferedRead(unsigned int x, unsigned int y, unsigned int width, uns
     cleanup();
     return false;
   } 
-  catch (std::bad_alloc) 
+  catch (std::bad_alloc &e) 
   {
     jpeg_destroy_decompress(&cinfo);
     if (infile) fclose(infile);

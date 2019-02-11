@@ -417,7 +417,7 @@ bool Image::writeBmp(char *fileName)
     outfile.close();
         */
   }
-  catch (std::ofstream::failure) 
+  catch (std::ofstream::failure &e) 
   {
 /*
         outfile.close();

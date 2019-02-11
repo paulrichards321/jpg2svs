@@ -48,6 +48,9 @@ pacman -S make
 # Install pkg-config:
 pacman -S msys/pkg-config
 
+# Install libtiff:
+pacman -S mingw64/mingw-w64-x86_64-libtiff
+
 # Install opencv (this will also grab the libtiff and libjpeg-turbo 
 dependacies):
 pacman -S mingw64/mingw-w64-x86_64-opencv
@@ -109,7 +112,7 @@ cd libjpeg-turbo-1.5.3
 mkdir build
 cd build
 "C:\Program Files\cmake\bin\cmake.exe" -G "Visual Studio 14 2015 Win64" ..
-"C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe" turbojpeg-static.vcxprg
+"C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe" turbojpeg-static.vcxproj
 
 # Be careful with the double quotation marks and two dots after Win64 in the
 # above cmake command, they are needed.

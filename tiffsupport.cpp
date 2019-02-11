@@ -144,7 +144,7 @@ bool Tiff::setAttributes(int newSamplesPerPixel, int newBitsPerSample, int newIm
       TIFFSetField(mtif, TIFFTAG_JPEGQUALITY, quality);    
       TIFFSetField(mtif, TIFFTAG_JPEGCOLORMODE, JPEGCOLORMODE_RGB);
     }
-    catch (std::bad_alloc) 
+    catch (std::bad_alloc &e) 
     {
       if (mtif) TIFFClose(mtif);
       merrMsg << "Insufficient memory to decompress '" << mfileName;
@@ -152,7 +152,7 @@ bool Tiff::setAttributes(int newSamplesPerPixel, int newBitsPerSample, int newIm
       mtif = 0;
       return false;
     } 
-    catch (std::runtime_error) 
+    catch (std::runtime_error &e) 
     {
       if (mtif) TIFFClose(mtif);
       mtif = 0;
@@ -214,7 +214,7 @@ bool Tiff::createFile(const std::string& newFileName)
       throw std::runtime_error(merrMsg.str());
     }
   } 
-  catch (std::runtime_error) 
+  catch (std::runtime_error &e) 
   {
     if (mtif) TIFFClose(mtif);
     mtif = 0;
@@ -466,13 +466,13 @@ bool Tiff::load(const std::string& newFileName)
     TIFFClose(mtif);
     mtif = 0;
     mValidObject = true;
-  } catch (std::bad_alloc) {
+  } catch (std::bad_alloc &e) {
     if (mtif) TIFFClose(mtif);
     mtif = 0;
     merrMsg << "Insufficient memory to decompress '" << mfileName;
     merrMsg << "' into memory";
     return false;
-  } catch (std::runtime_error) {
+  } catch (std::runtime_error &e) {
     if (mtif) TIFFClose(mtif);
     mtif = 0;
     return false;

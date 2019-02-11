@@ -23,9 +23,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <ctime>
 #include <cstdlib>
 #include <cctype>
-#include <unistd.h>
 #if defined(_WIN32) || defined(_WIN64)
 #include "console-mswin.h"
+#include "getopt.h"
 #else
 #include "console-unix.h"
 #endif
@@ -426,17 +426,17 @@ int SlideConvertor::convert()
   //----------------------------------------------------------------------
   // Below three blocks for blending the middle level into the top level
   //----------------------------------------------------------------------
-  int smallBlendLevels[] =          {  0,  2,  1,   1,   1 };
+  int smallBlendLevels[] =          {  0,  1,  0,   1,   1 };
   int smallBlendMagnifyLevels[] =   {  1,  64,  4,  16,  32 };
-  int bigBlendLevels[] =            {  0,  3,  1,   1,   1,   1 };
-  int bigBlendMagnifyLevels[] =     {  1,  1,  4,  16,  64, 128 };
+  int bigBlendLevels[] =            {  0,  1,  1,   1,   1,   1 };
+  int bigBlendMagnifyLevels[] =     {  1,  128,  4,  16,  64, 128 };
   
-  int smallBlendZLevels1[] =        {  0,  2,  0,   1,   1 };
+  int smallBlendZLevels1[] =        {  0,  1,  0,   1,   1 };
   int smallBlendZMagnifyLevels1[] = {  1,  64,  4,  16,  32 };
   int smallBlendZLevels2[] =        {  0,  0,  1,   1 };
   int smallBlendZMagnifyLevels2[] = {  1,  4, 16,  32 };
 
-  int bigBlendZLevels1[] =          {  0,  2,  0,   1,   1,   1 };
+  int bigBlendZLevels1[] =          {  0,  1,  0,   1,   1,   1 };
   int bigBlendZMagnifyLevels1[] =   {  1,  256,  4,  16,  64, 128 };
   int bigBlendZLevels2[] =          {  0,  0,  1,   1,   1 };
   int bigBlendZMagnifyLevels2[] =   {  1,  4, 16,  64, 128 };
@@ -444,9 +444,9 @@ int SlideConvertor::convert()
   //----------------------------------------------------------------------
   // Below three blocks for NOT blending the middle level into the top level
   //----------------------------------------------------------------------
-  int smallLevels[] =          {  0,  2,  1,   1,   2 };
+  int smallLevels[] =          {  0,  2,  0,   1,   2 };
   int smallMagnifyLevels[] =   {  1,  64,  4,  16,  32 };
-  int bigLevels[] =            {  0,  3,  1,   1,   2,   2 };
+  int bigLevels[] =            {  0,  3,  0,   1,   2,   2 };
   int bigMagnifyLevels[] =     {  1,  1,  4,  16,  64, 128 };
   
   int smallZLevels1[] =        {  0,  2,  0,   1,   2 };

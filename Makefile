@@ -4,15 +4,16 @@ all: jpg2svs svsinfo
 CXX=g++
 SLIDE_CFLAGS= -Wall
 OPENCVLIB=/usr/lib64
+OPENCV_INCLUDE=/mingw64/include/opencv4
 OPENCV_LFLAGS=-L$(OPENCVLIB) -lopencv_core -lopencv_highgui -lopencv_features2d -lopencv_imgcodecs -lopencv_imgproc
-SLIDE_LFLAGS=-ljpeg -ltiff $(OPENCV_LFLAGS) -L/usr/lib 
+SLIDE_LFLAGS=-ljpeg -ltiff $(OPENCV_LFLAGS) -L/mingw64/lib 
 
 CONV_OBJECTS=jpg2svs.o jpgcachesupport.o imagesupport.o jpgsupport.o tiffsupport.o composite.o console-mswin.o
 
 INFO_OBJECTS=imagesupport.o jpgsupport.o tiffsupport.o svsinfo.o
 
 .cpp.o:
-	$(CXX) -c -g -I/usr/include $(SLIDE_CFLAGS) $<
+	$(CXX) -c -g -I$(OPENCV_INCLUDE) $(SLIDE_CFLAGS) $<
 
 jpg2svs: $(CONV_OBJECTS)
 	$(CXX) -g -o jpg2svs -pthread $(CONV_OBJECTS) \

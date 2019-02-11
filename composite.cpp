@@ -899,7 +899,7 @@ bool CompositeSlide::findXYOffset(int lowerLevel, int higherLevel, int *bestXOff
   double yZoomOut = pHigherConf->myAdj / pLowerConf->myAdj;
   int simulatedWidth = (int) lround((double)pLowerConf->mdetailedWidth / xZoomOut);
   int simulatedHeight = (int) lround((double)pLowerConf->mdetailedHeight / yZoomOut);
-  //cv::Mat imgTest = cv::imread(pLowerConf->mxyArr[0].mFileName[0], CV_LOAD_IMAGE_COLOR); 
+  //cv::Mat imgTest = cv::imread(pLowerConf->mxyArr[0].mFileName[0], cv::IMREAD_COLOR); 
   //simulatedWidth += imgTest.cols / xZoomOut;
   //simulatedHeight += imgTest.rows / yZoomOut;
 
@@ -909,7 +909,7 @@ bool CompositeSlide::findXYOffset(int lowerLevel, int higherLevel, int *bestXOff
   std::cout << "Reading level " << lowerLevel << " and scaling..." << std::endl;
   for (int i=0; i<pLowerConf->mtotalTiles; i++)
   {
-    cv::Mat imgPart = cv::imread(pLowerConf->mxyArr[i].mBaseFileName, CV_LOAD_IMAGE_COLOR); 
+    cv::Mat imgPart = cv::imread(pLowerConf->mxyArr[i].mBaseFileName, cv::IMREAD_COLOR); 
     if (imgPart.total()>0)
     {
       //************************************************************
@@ -947,7 +947,7 @@ bool CompositeSlide::findXYOffset(int lowerLevel, int higherLevel, int *bestXOff
   logFile << "Reading level " << higherLevel << " and scaling." << std::endl;
   for (int i=0; i<pHigherConf->mtotalTiles; i++)
   {
-    cv::Mat imgPart = cv::imread(pHigherConf->mxyArr[i].mBaseFileName, CV_LOAD_IMAGE_COLOR); 
+    cv::Mat imgPart = cv::imread(pHigherConf->mxyArr[i].mBaseFileName, cv::IMREAD_COLOR); 
     double xPixel=((double)(pHigherConf->mxMax - pHigherConf->mxyArr[i].mx)/(double)pHigherConf->mxAdj);
     double yPixel=((double)(pHigherConf->myMax - pHigherConf->mxyArr[i].my)/(double)pHigherConf->myAdj);
     int xPixelInt = (int) xPixel;
