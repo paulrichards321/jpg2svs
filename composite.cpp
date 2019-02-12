@@ -1602,13 +1602,13 @@ void CompositeSlide::blendLevels(BYTE *pDest, BYTE *pSrc, int x, int y, int widt
         x3 = x + width;
       }
       x3 = x3 - x;
-      int yMax = (int) lround((double) y3 * yScaleOut);
+      int yMax = (int) ceil((double) y3 * yScaleOut);
       if (yMax > tileHeight) 
       {
         yMax=tileHeight;
       }
-      int offset = (int) lround((double) x2 * xScaleOut) * 3;
-      int rowSize2 = (int) lround((double) (x3-x2) * xScaleOut) * 3;
+      int offset = (int) floor((double) x2 * xScaleOut) * 3;
+      int rowSize2 = (int) ceil((double) (x3-x2) * xScaleOut) * 3;
       if (offset > tileWidth * 3)
       {
         continue;
@@ -1617,7 +1617,7 @@ void CompositeSlide::blendLevels(BYTE *pDest, BYTE *pSrc, int x, int y, int widt
       {
         continue;
       }
-      for (int y4 = (int) lround((double) y2 * yScaleOut); y4 < yMax; y4++)
+      for (int y4 = (int) round(double) y2 * yScaleOut); y4 < yMax; y4++)
       {
         int offset2=(y4 * tileWidth * 3)+offset;
         if (offset2 + rowSize2 <= tileSize)

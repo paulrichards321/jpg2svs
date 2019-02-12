@@ -56,7 +56,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#if !defined(__GNUC__)
 #pragma warning(disable:4996);
+#endif
 
 #define __GETOPT_H__
 
@@ -109,7 +111,7 @@ char    *optarg;		/* argument associated with option */
 extern char __declspec(dllimport) *__progname;
 #endif
 
-#ifdef __CYGWIN__
+#if defined(__CYGWIN__) || defined(__cplusplus)
 static char EMSG[] = "";
 #else
 #define	EMSG		""

@@ -94,7 +94,8 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   int readZLevel = 0;
   int readDirection = 0;
   unsigned char bkgColor=255;
-  bool fillin = ((tiled == true && level < 2 && slide->checkLevel(2)) ? true : false);
+  bool fillin = ((level < 2 && slide->checkLevel(2)) ? true : false);
+  int finalScaleWidth=256, finalScaleHeight=256;
 
   if (level==0) 
   {
@@ -140,6 +141,15 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
     yScaleReverse=(double) destTotalHeight / (double) srcTotalHeight;
     grabWidth=(int) srcTotalWidth;
     grabHeight=(int) srcTotalHeight;
+
+    xScaleL2=(double) srcTotalWidthL2 / (double) srcTotalWidth;
+    yScaleL2=(double) srcTotalHeightL2 / (double) srcTotalHeight;
+ 
+    grabWidthL2=(int) srcTotalWidthL2;
+    grabHeightL2=(int) srcTotalHeightL2;
+
+    finalScaleWidth=destTotalWidth;
+    finalScaleHeight=destTotalHeight;
   } 
   else if (magnification==1 || slide->isPreviewSlide(level))
   {
@@ -154,8 +164,8 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
 
     xScaleL2=(double) srcTotalWidthL2 / (double) destTotalWidth;
     yScaleL2=(double) srcTotalHeightL2 / (double) destTotalHeight;
-    grabWidthL2=(int)round(256.0 * xScaleL2);
-    grabHeightL2=(int)round(256.0 * yScaleL2);
+    grabWidthL2=(int)ceil(256.0 * xScaleL2);
+    grabHeightL2=(int)ceil(256.0 * yScaleL2);
   }
   else
   {
@@ -169,14 +179,14 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
     yScale=(double) srcTotalHeight / (double) destTotalHeight;
     xScaleReverse=(double) destTotalWidth / (double) srcTotalWidth;
     yScaleReverse=(double) destTotalHeight / (double) srcTotalHeight;
-    grabWidth=(int)round(256.0 * xScale);
-    grabHeight=(int)round(256.0 * yScale);
+    grabWidth=(int)ceil(256.0 * xScale);
+    grabHeight=(int)ceil(256.0 * yScale);
 
     xScaleL2=(double) srcTotalWidthL2 / (double) srcTotalWidth;
     yScaleL2=(double) srcTotalHeightL2 / (double) srcTotalHeight;
  
-    grabWidthL2=(int)round(256.0 * (double) srcTotalWidthL2 / (double) destTotalWidth);
-    grabHeightL2=(int)round(256.0 * (double) srcTotalHeightL2 / (double) destTotalHeight);
+    grabWidthL2=(int)ceil(256.0 * (double) srcTotalWidthL2 / (double) destTotalWidth);
+    grabHeightL2=(int)ceil(256.0 * (double) srcTotalHeightL2 / (double) destTotalHeight);
   }
   *logFile << " xScale=" << xScale << " yScale=" << yScale;
   *logFile << " srcTotalWidth=" << srcTotalWidth << " srcTotalHeight=" << srcTotalHeight;
@@ -293,7 +303,7 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
         }
         if (readOkL2)
         {
-          int xSrcStartL2=round((double) xSrc * xScaleL2);
+          int xSrcStartL2=round(double) xSrc * xScaleL2);
           int ySrcStartL2=round((double) ySrc * yScaleL2);
           int xSrcEndL2=xSrcStartL2 + grabWidthL2;
           int ySrcEndL2=ySrcStartL2 + grabHeightL2;
@@ -322,10 +332,10 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
               }
             }
             cv::Mat imgSrc(grabHeightL2, grabWidthL2, CV_8UC3, pBitmap3);
-            cv::Size scaledSize(256, 256);
+            cv::Size scaledSize(finalScaleWidth, finalScaleHeight);
             cv::resize(imgSrc, imgScaled2, scaledSize, (double) destTotalWidth / (double) srcTotalWidthL2, (double) destTotalHeight / (double) srcTotalHeightL2);
             imgSrc.release();
-            slide->blendLevels(imgScaled2.data, pBitmap2, xSrc, ySrc, grabWidth, grabHeight, 256, 256, xScaleReverse, yScaleReverse, level); 
+            slide->blendLevels(imgScaled2.data, pBitmap2, xSrc, ySrc, grabWidth, grabHeight, finalScaleWidth, finalScaleHeight, xScaleReverse, yScaleReverse, level); 
             pBitmap2=imgScaled2.data;
           } 
         } 
@@ -426,37 +436,37 @@ int SlideConvertor::convert()
   //----------------------------------------------------------------------
   // Below three blocks for blending the middle level into the top level
   //----------------------------------------------------------------------
-  int smallBlendLevels[] =          {  0,  1,  0,   1,   1 };
+  int smallBlendLevels[] =          {  0,  1,  1,   1,   1 };
   int smallBlendMagnifyLevels[] =   {  1,  64,  4,  16,  32 };
   int bigBlendLevels[] =            {  0,  1,  1,   1,   1,   1 };
   int bigBlendMagnifyLevels[] =     {  1,  128,  4,  16,  64, 128 };
   
-  int smallBlendZLevels1[] =        {  0,  1,  0,   1,   1 };
+  int smallBlendZLevels1[] =        {  0,  1,  1,   1,   1 };
   int smallBlendZMagnifyLevels1[] = {  1,  64,  4,  16,  32 };
-  int smallBlendZLevels2[] =        {  0,  0,  1,   1 };
+  int smallBlendZLevels2[] =        {  0,  1,  1,   1 };
   int smallBlendZMagnifyLevels2[] = {  1,  4, 16,  32 };
 
-  int bigBlendZLevels1[] =          {  0,  1,  0,   1,   1,   1 };
+  int bigBlendZLevels1[] =          {  0,  1,  1,   1,   1,   1 };
   int bigBlendZMagnifyLevels1[] =   {  1,  256,  4,  16,  64, 128 };
-  int bigBlendZLevels2[] =          {  0,  0,  1,   1,   1 };
+  int bigBlendZLevels2[] =          {  0,  1,  1,   1,   1 };
   int bigBlendZMagnifyLevels2[] =   {  1,  4, 16,  64, 128 };
 
   //----------------------------------------------------------------------
   // Below three blocks for NOT blending the middle level into the top level
   //----------------------------------------------------------------------
-  int smallLevels[] =          {  0,  2,  0,   1,   2 };
+  int smallLevels[] =          {  0,  2,  1,   1,   2 };
   int smallMagnifyLevels[] =   {  1,  64,  4,  16,  32 };
-  int bigLevels[] =            {  0,  3,  0,   1,   2,   2 };
+  int bigLevels[] =            {  0,  3,  1,   1,   2,   2 };
   int bigMagnifyLevels[] =     {  1,  1,  4,  16,  64, 128 };
   
-  int smallZLevels1[] =        {  0,  2,  0,   1,   2 };
+  int smallZLevels1[] =        {  0,  2,  1,   1,   2 };
   int smallZMagnifyLevels1[] = {  1,  64,  4,  16,  32 };
-  int smallZLevels2[] =        {  0,  0,  1,   2 };
+  int smallZLevels2[] =        {  0,  1,  1,   2 };
   int smallZMagnifyLevels2[] = {  1,  4, 16,  32 };
 
-  int bigZLevels1[] =          {  0,  2,  0,   1,   2,   2 };
+  int bigZLevels1[] =          {  0,  2,  1,   1,   2,   2 };
   int bigZMagnifyLevels1[] =   {  1,  256,  4,  16,  64, 128 };
-  int bigZLevels2[] =          {  0,  0,  1,   2,   2 };
+  int bigZLevels2[] =          {  0,  1,  1,   2,   2 };
   int bigZMagnifyLevels2[] =   {  1,  4, 16,  64, 128 };
 
   int *levels1, *levels2, *magnifyLevels1, *magnifyLevels2;
