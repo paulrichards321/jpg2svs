@@ -303,7 +303,7 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
         }
         if (readOkL2)
         {
-          int xSrcStartL2=round(double) xSrc * xScaleL2);
+          int xSrcStartL2=round((double) xSrc * xScaleL2);
           int ySrcStartL2=round((double) ySrc * yScaleL2);
           int xSrcEndL2=xSrcStartL2 + grabWidthL2;
           int ySrcEndL2=ySrcStartL2 + grabHeightL2;

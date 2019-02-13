@@ -1617,7 +1617,7 @@ void CompositeSlide::blendLevels(BYTE *pDest, BYTE *pSrc, int x, int y, int widt
       {
         continue;
       }
-      for (int y4 = (int) round(double) y2 * yScaleOut); y4 < yMax; y4++)
+      for (int y4 = (int) round(y2 * yScaleOut); y4 < yMax; y4++)
       {
         int offset2=(y4 * tileWidth * 3)+offset;
         if (offset2 + rowSize2 <= tileSize)
