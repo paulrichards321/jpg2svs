@@ -289,7 +289,12 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
         {
           cv::Mat imgSrc(grabHeight, grabWidth, CV_8UC3, pBitmap2);
           cv::Size scaledSize(destTotalWidth, destTotalHeight);
-          cv::resize(imgSrc, imgScaled, scaledSize, xScaleReverse, yScaleReverse);
+          int scaleMethod=cv::INTER_CUBIC;
+          if (xScaleReverse < 1.0 || yScaleReverse < 1.0)
+          {
+            scaleMethod=cv::INTER_AREA;
+          }
+          cv::resize(imgSrc, imgScaled, scaledSize, xScaleReverse, yScaleReverse, scaleMethod);
           imgSrc.release();
           pBitmap2 = imgScaled.data;  
         } 
@@ -297,7 +302,12 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
         {
           cv::Mat imgSrc(grabHeight, grabWidth, CV_8UC3, pBitmap2);
           cv::Size scaledSize(256, 256);
-          cv::resize(imgSrc, imgScaled, scaledSize, xScaleReverse, yScaleReverse);
+          int scaleMethod=cv::INTER_CUBIC;
+          if (xScaleReverse < 1.0 || yScaleReverse < 1.0)
+          {
+            scaleMethod=cv::INTER_AREA;
+          }
+          cv::resize(imgSrc, imgScaled, scaledSize, xScaleReverse, yScaleReverse, scaleMethod);
           imgSrc.release();
           pBitmap2 = imgScaled.data;  
         }
@@ -333,7 +343,14 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
             }
             cv::Mat imgSrc(grabHeightL2, grabWidthL2, CV_8UC3, pBitmap3);
             cv::Size scaledSize(finalScaleWidth, finalScaleHeight);
-            cv::resize(imgSrc, imgScaled2, scaledSize, (double) destTotalWidth / (double) srcTotalWidthL2, (double) destTotalHeight / (double) srcTotalHeightL2);
+            double xScaleResize=(double) destTotalWidth / (double) srcTotalWidthL2;
+            double yScaleResize=(double) destTotalHeight / (double) srcTotalHeightL2;
+            int scaleMethod=cv::INTER_CUBIC;
+            if (xScaleResize < 1.0 || yScaleResize < 1.0)
+            {
+              scaleMethod=cv::INTER_AREA;
+            }
+            cv::resize(imgSrc, imgScaled2, scaledSize, xScaleResize, yScaleResize, scaleMethod);
             imgSrc.release();
             slide->blendLevels(imgScaled2.data, pBitmap2, xSrc, ySrc, grabWidth, grabHeight, finalScaleWidth, finalScaleHeight, xScaleReverse, yScaleReverse, level); 
             pBitmap2=imgScaled2.data;
