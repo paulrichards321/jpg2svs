@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "getopt.h"
 #else
 #include "console-unix.h"
+#include <unistd.h>
 #endif
 #include "tiffsupport.h"
 #include "composite.h"

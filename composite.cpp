@@ -1562,7 +1562,7 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
 }
 
 
-void CompositeSlide::blendLevels(BYTE *pDest, BYTE *pSrc, int x, int y, int width, int height, int tileWidth, int tileHeight, double xScaleOut, double yScaleOut, int srcLevel)
+void CompositeSlide::blendLevelsByRegion(BYTE *pDest, BYTE *pSrc, int x, int y, int width, int height, int tileWidth, int tileHeight, double xScaleOut, double yScaleOut, int srcLevel)
 {
   if (checkLevel(srcLevel)==false) return;
   IniConf *pLowerConf=mConf[srcLevel];
@@ -1623,6 +1623,57 @@ void CompositeSlide::blendLevels(BYTE *pDest, BYTE *pSrc, int x, int y, int widt
         if (offset2 + rowSize2 <= tileSize)
         {
           memcpy(&pDest[offset2], &pSrc[offset2], rowSize2);
+        }
+      }
+    }
+  }
+}
+
+
+void blendLevelsByBkg(BYTE *pDest, BYTE *pSrc, int tileWidth, int tileHeight, int subTileWidth, int subTileHeight, BYTE bkgColor)
+{
+  int rowSize=tileWidth * 3;
+  int subRowSize = subTileWidth * 3;
+  bool set_bkg = false;
+  for (int y1 = 0; y1 < tileHeight; y1 += subTileHeight)
+  {
+    int xCount=0;
+    int yCount=0;
+    bool set_bkg = true;
+    for (int x1 = 0; x1 < rowSize; x1++)
+    {
+      int y3=y1+subTileHeight;
+      for (int y2=y1; y2 < y3 && y2 < tileHeight; y2++)
+      {
+        int x2=x1;
+        int x3=x1+subTileWidth;
+        while (x2 < x3 && x2 < tileWidth)
+        {
+          if (pRow[x2] != bkgColor || pRow[x2+1] != bkgColor && pRow[x2+2] != bkgColor)
+          {
+            setBkg = false;
+            break;
+          }
+          x2 += 3;
+        }
+      }
+      
+      if (yCount >= subTileHeight && xCount >= subTileWidth)
+      {
+        for (int y2=y1; y2 < y3; y2++)
+        {
+          int offset=(y2*rowSize)+x1;
+          BYTE *pSrc2=pSrc+offset;
+          BYTE *pSrcEnd=pSrc2+subRowSize;
+          BYTE *pDest2=pDest+offset;
+          while (pSrc2 < pSrcEnd) 
+          {
+            pDest2[0] = pSrc2[0];
+            pDest2[1] = pSrc2[1];
+            pDest2[2] = pSrc2[2];
+            pSrc2 += 3;
+            pDest2 += 3;
+          }
         }
       }
     }
