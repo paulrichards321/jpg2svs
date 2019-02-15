@@ -42,7 +42,7 @@ protected:
   std::string errMsg;
   int mBaseTotalWidth, mBaseTotalHeight;
   bool mValidObject;
-  bool mBlendTopLevel;
+  bool mBlendTopLevel, mBlendByRegion;
   bool mIncludeZStack;
   int mQuality;
   int mStep, mZSteps;
@@ -52,7 +52,7 @@ public:
   ~SlideConvertor() { closeRelated(); }
   void closeRelated();
   std::string getErrMsg() { return errMsg; }
-  int open(std::string inputFile, std::string outputFile, bool blendTopLevel, bool markOutline, bool includeZStack, int quality, int bestXOffset = -1, int bestYOffset = -1);
+  int open(std::string inputFile, std::string outputFile, bool blendTopLevel, bool blendByRegion, bool markOutline, bool includeZStack, int quality, int bestXOffset = -1, int bestYOffset = -1);
   int convert();
   int outputLevel(int level, bool tiled, int direction, int zLevel, int magnification);
 };
@@ -88,6 +88,7 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   double xScale=0.0, yScale=0.0;
   double xScaleL2=0.0, yScaleL2=0.0;
   double xScaleReverse=0.0, yScaleReverse=0.0;
+  double xScaleResize=0.0, yScaleResize=0.0;
   int grabWidth=0, grabHeight=0;
   int grabWidthL2=0, grabHeightL2=0;
   BYTE* pSizedBitmap = 0;
@@ -97,6 +98,8 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   unsigned char bkgColor=255;
   bool fillin = ((level < 2 && slide->checkLevel(2)) ? true : false);
   int finalScaleWidth=256, finalScaleHeight=256;
+  int scaleMethod=cv::INTER_CUBIC;
+  int scaleMethodL2=cv::INTER_CUBIC;
 
   if (level==0) 
   {
@@ -189,6 +192,11 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
     grabWidthL2=(int)ceil(256.0 * (double) srcTotalWidthL2 / (double) destTotalWidth);
     grabHeightL2=(int)ceil(256.0 * (double) srcTotalHeightL2 / (double) destTotalHeight);
   }
+  if (xScaleReverse < 1.0 || yScaleReverse < 1.0)
+  {
+    scaleMethod=cv::INTER_AREA;
+  }
+
   *logFile << " xScale=" << xScale << " yScale=" << yScale;
   *logFile << " srcTotalWidth=" << srcTotalWidth << " srcTotalHeight=" << srcTotalHeight;
   *logFile << " destTotalWidth=" << destTotalWidth << " destTotalHeight=" << destTotalHeight;
@@ -253,6 +261,15 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
     {
       *logFile << "Failed to read full pyramid level 2." << std::endl;
     }
+    else if (srcTotalWidthL2 > 0 && srcTotalHeightL2 > 0)
+    {
+      xScaleResize=(double) destTotalWidth / (double) srcTotalWidthL2;
+      yScaleResize=(double) destTotalHeight / (double) srcTotalHeightL2;
+      if (xScaleResize < 1.0 || yScaleResize < 1.0)
+      {
+        scaleMethodL2=cv::INTER_AREA;
+      }
+    }
   }
   while (ySrc<srcTotalHeight && yDest<destTotalHeight && error==false)
   {
@@ -290,11 +307,6 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
         {
           cv::Mat imgSrc(grabHeight, grabWidth, CV_8UC3, pBitmap2);
           cv::Size scaledSize(destTotalWidth, destTotalHeight);
-          int scaleMethod=cv::INTER_CUBIC;
-          if (xScaleReverse < 1.0 || yScaleReverse < 1.0)
-          {
-            scaleMethod=cv::INTER_AREA;
-          }
           cv::resize(imgSrc, imgScaled, scaledSize, xScaleReverse, yScaleReverse, scaleMethod);
           imgSrc.release();
           pBitmap2 = imgScaled.data;  
@@ -303,11 +315,6 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
         {
           cv::Mat imgSrc(grabHeight, grabWidth, CV_8UC3, pBitmap2);
           cv::Size scaledSize(256, 256);
-          int scaleMethod=cv::INTER_CUBIC;
-          if (xScaleReverse < 1.0 || yScaleReverse < 1.0)
-          {
-            scaleMethod=cv::INTER_AREA;
-          }
           cv::resize(imgSrc, imgScaled, scaledSize, xScaleReverse, yScaleReverse, scaleMethod);
           imgSrc.release();
           pBitmap2 = imgScaled.data;  
@@ -344,17 +351,17 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
             }
             cv::Mat imgSrc(grabHeightL2, grabWidthL2, CV_8UC3, pBitmap3);
             cv::Size scaledSize(finalScaleWidth, finalScaleHeight);
-            double xScaleResize=(double) destTotalWidth / (double) srcTotalWidthL2;
-            double yScaleResize=(double) destTotalHeight / (double) srcTotalHeightL2;
-            int scaleMethod=cv::INTER_CUBIC;
-            if (xScaleResize < 1.0 || yScaleResize < 1.0)
-            {
-              scaleMethod=cv::INTER_AREA;
-            }
-            cv::resize(imgSrc, imgScaled2, scaledSize, xScaleResize, yScaleResize, scaleMethod);
+            cv::resize(imgSrc, imgScaled2, scaledSize, xScaleResize, yScaleResize, scaleMethodL2);
             imgSrc.release();
-            slide->blendLevels(imgScaled2.data, pBitmap2, xSrc, ySrc, grabWidth, grabHeight, finalScaleWidth, finalScaleHeight, xScaleReverse, yScaleReverse, level); 
-            pBitmap2=imgScaled2.data;
+            if (mBlendByRegion)
+            {
+              slide->blendLevelsByRegion(imgScaled2.data, pBitmap2, xSrc, ySrc, grabWidth, grabHeight, finalScaleWidth, finalScaleHeight, xScaleReverse, yScaleReverse, level); 
+              pBitmap2=imgScaled2.data;
+            }
+            else
+            {
+              blendLevelsByBkgd(pBitmap2, imgScaled2.data, finalScaleWidth, finalScaleHeight, 8, 245);
+            }
           } 
         } 
         bool writeOk=false;
@@ -638,7 +645,7 @@ int SlideConvertor::convert()
 }
 
 
-int SlideConvertor::open(std::string inputFile, std::string outputFile, bool blendTopLevel, bool markOutline, bool includeZStack, int quality, int bestXOffset, int bestYOffset)
+int SlideConvertor::open(std::string inputFile, std::string outputFile, bool blendTopLevel, bool blendByRegion, bool markOutline, bool includeZStack, int quality, int bestXOffset, int bestYOffset)
 {
   closeRelated();
   logFile = new std::ofstream("jpg2svs.log");
@@ -666,6 +673,7 @@ int SlideConvertor::open(std::string inputFile, std::string outputFile, bool ble
   mStep=0;
   mLastZLevel=-1;
   mBlendTopLevel = blendTopLevel;
+  mBlendByRegion = blendByRegion;
   mIncludeZStack = includeZStack;
   mQuality = quality;
   if (mBaseTotalWidth > 0 && mBaseTotalHeight > 0)
@@ -766,10 +774,11 @@ int main(int argc, char** argv)
   std::string infile, outfile;
   int bestXOffset = -1, bestYOffset = -1;
   bool blendTopLevel = true;
+  bool blendByRegion = false;
   bool doBorderHighlight = true;
   bool includeZStack = false;
   int quality = 90;
-  char syntax[] = "syntax: jpg2svs -b=[on,off] -h=[on,off] -x=[bestXOffset] -y=[bestYOffset] -z=[on,off] <inputfolder> <outputfile> \nFlags:\t-b blend the top level with the middle level. Default on.\n\t-h highlight visible areas with a black border. Default on.\n\t-q Set minimal jpeg quality percentage. Default 90.\n\t-x and -y Optional: set best X, Y offset of image if upper and lower pyramid levels are not aligned.\n\t-z Process Z-stack if the image has one. Default off.\n";
+  char syntax[] = "syntax: jpg2svs -b=[on,off] -h=[on,off] -x=[bestXOffset] -y=[bestYOffset] -z=[on,off] <inputfolder> <outputfile> \nFlags:\t-b blend the top level with the middle level. Default on.\n\t-r blend the top level with the middle level only by region, not by empty background. Default off.\n\t-h highlight visible areas with a black border. Default on.\n\t-q Set minimal jpeg quality percentage. Default 90.\n\t-x and -y Optional: set best X, Y offset of image if upper and lower pyramid levels are not aligned.\n\t-z Process Z-stack if the image has one. Default off.\n";
 
   if (argc < 3)
   {
@@ -778,7 +787,7 @@ int main(int argc, char** argv)
   }
   int opt;
   bool invalidOpt = false;
-  while((opt = getopt(argc, argv, "b:h:q:x:y:z:")) != -1)
+  while((opt = getopt(argc, argv, "b:h:r:q:x:y:z:")) != -1)
   {
     if (optarg != NULL) std::cout << " optarg=" << optarg << std::endl;
     switch (opt)
@@ -788,6 +797,9 @@ int main(int argc, char** argv)
         break;
       case 'h':
         doBorderHighlight = getBoolOpt(optarg, invalidOpt);
+        break;
+      case 'r':
+        blendByRegion = getBoolOpt(optarg, invalidOpt);
         break;
       case 'q':
         quality = getIntOpt(optarg, invalidOpt);
@@ -839,7 +851,7 @@ int main(int argc, char** argv)
     return 1;
   }
   
-  error=slideConv.open(infile.c_str(), outfile.c_str(), blendTopLevel, doBorderHighlight, includeZStack, quality, bestXOffset, bestYOffset);
+  error=slideConv.open(infile.c_str(), outfile.c_str(), blendTopLevel, blendByRegion, doBorderHighlight, includeZStack, quality, bestXOffset, bestYOffset);
   if (error==0)
   {
     error=slideConv.convert();
