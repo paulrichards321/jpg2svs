@@ -360,7 +360,7 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
             }
             else
             {
-              blendLevelsByBkgd(pBitmap2, imgScaled2.data, finalScaleWidth, finalScaleHeight, 8, 245);
+              blendLevelsByBkgd(pBitmap2, imgScaled2.data, finalScaleWidth, finalScaleHeight, 32, 245);
             }
           } 
         } 

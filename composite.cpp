@@ -1635,50 +1635,92 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, int tileWidth, int tileHeight, i
   int rowSize=tileWidth * 3;
   for (int y = 0; y < tileHeight; y += limit)
   {
-    int matches = 0;
-    for (int x = 0; x < tileWidth; x += limit)
+    int xMatches = 0;
+    int yMatches = 0;
+    int yLimit = limit;
+    int xLimit = limit;
+    int xBorder = limit;
+    if (y + limit > tileHeight) yLimit = tileHeight - y;
+    register BYTE *pDest2 = &pDest[y * rowSize];
+    BYTE *pDestRowStart = pDest2;
+    register int x = 0;
+    while (x < tileWidth)
     {
-      int xCount=0;
-      bool bkgdMatch = true;
-      BYTE *pDest2 = &pDest[(y * rowSize) + x * 3];
-      BYTE *pDestRowEnd = &pDest2[rowSize];
-      BYTE *pSrc2 = &pSrc[(y * rowSize) + x * 3];
-      while (pDest2 < pDestRowEnd && bkgdMatch)
+      if (x + limit > tileWidth) xLimit = tileWidth - x;
+      register int xMin = xLimit;
+      register int xMax = 0;
+      register BYTE *pDestSubTileEnd = &pDest2[xLimit];
+      while (pDest2 < pDestSubTileEnd && bkgdMatch)
       {
-        if (*pDest2 < bkgdColor || pDest2[1] < bkgdColor || pDest2[2] < bkgdColor)
-        {
-          bkgdMatch = false;
-          break;
-        }
-        BYTE *pDest3 = pDest2;
-        BYTE *pSrc3 = pSrc2;
-        BYTE *pDestColEnd = &pDest2[tileHeight * rowSize];
+        register BYTE *pDest3 = pDest2;
+        register BYTE *pDestColEnd = &pDest2[yLimit * rowSize];
+        register int x2=0;
         while (pDest3 < pDestColEnd)
         {
           if (*pDest3 < bkgdColor || pDest3[1] < bkgdColor || pDest3[2] < bkgdColor)
           {
-            bkgdMatch = false;
-            break;
+            if (x < xMin)
+            {
+              xMin = x2;
+            }
+            if (x > xMax)
+            {
+              xMax = x2;
+            }
           }
           pDest3 += rowSize;
+          x2++;
         }
         pDest2 += 3;
       }
-      if (bkgdMatch) 
+      if (xMax == 0)
       {
-        matches+=limit;    
+        xMatches += xLimit;    
+        yMatches = yLimit;
       }
-      else if (matches)
+      else
       {
-        BYTE *pDest2 = &pDest[(y * rowSize) + (x-matches) * 3];
-        int copySize = (x-matches) * 3;
-        BYTE *pSrc2 = &pSrc[(y * rowSize) + (x-matches) * 3];
-        BYTE *pSrcColEnd=pSrc + limit * rowSize;
-        while (pSrc2 < pSrcColEnd)
+        xMatches += xMin;
+      }
+      if (xMax != 0 && xMatches >= xLimit)
+      {
+        register BYTE *pDest3 = &pDest[(y * rowSize) + ((x-xMatches) * 3)];
+        register int copySize = xMatches * 3;
+        register BYTE *pSrc3 = &pSrc[(y * rowSize) + ((x-xMatches) * 3)];
+        register BYTE *pSrcColEnd=pSrc3 + (yMatches * rowSize);
+        while (pSrc3 < pSrcColEnd)
         {
-          memcpy(pDest2, 
-      
+          memcpy(pDest3, pSrc3, copySize);
+          pSrc3 += rowSize;
+          pDest3 += rowSize;
+        }
+        xMatches = 0;
+        yMatches = 0;
       }
+      if (xMax)
+      {
+        x += xMax + 1;
+        pDest2 = &pDestRowStart[x * 3];
+      }
+      else
+      {
+        x += xLimit;
+      }
+    }
+    if (xMatches)
+    {
+      register BYTE *pDest3 = &pDest[(y * rowSize) + ((x-xMatches) * 3)];
+      register int copySize = xMatches * 3;
+      register BYTE *pSrc3 = &pSrc[(y * rowSize) + ((x-xMatches) * 3)];
+      register BYTE *pSrcColEnd=pSrc3 + (yMatches * rowSize);
+      while (pSrc3 < pSrcColEnd)
+      {
+        memcpy(pDest3, pSrc3, copySize);
+        pSrc3 += rowSize;
+        pDest3 += rowSize;
+      }
+      xMatches = 0;
+      yMatches = 0;
     }
   }
 }
