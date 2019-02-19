@@ -3,7 +3,7 @@ all: jpg2svs svsinfo
 
 CXX=g++
 OPENCV_INCLUDE=/usr/local/include/opencv4
-SLIDE_CFLAGS= -I$(OPENCV_INCLUDE) -fstack-protector-all -Wall
+SLIDE_CFLAGS= -I$(OPENCV_INCLUDE) -fstack-protector-all -Wall -std=c++11
 OPENCV_LIB=/usr/lib64
 OPENCV_LFLAGS=-L$(OPENCV_LIB) -lopencv_core -lopencv_highgui -lopencv_features2d -lopencv_imgcodecs -lopencv_imgproc
 SLIDE_LFLAGS=-ljpeg -ltiff $(OPENCV_LFLAGS) -lncurses
