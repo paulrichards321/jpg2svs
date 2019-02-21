@@ -1630,8 +1630,18 @@ void CompositeSlide::blendLevelsByRegion(BYTE *pDest, BYTE *pSrc, int x, int y, 
 }
 
 
-void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, int x, int y, int tileWidth, int tileHeight, int limit, int *xSubSections, int *ySubSections, BYTE bkgdColor)
+void CompositeSlide::initializeBlendMem(int64_t width, int32_t tileWidth, int16_t limit)
 {
+  if (blendMem) delete[] blendMem;
+  blendMem=NULL;
+  int64_t size=width * 3;
+  blendMem=new uint8_t[size];
+}
+
+
+void CompositeSlide::blendLevelsByBkgd(uint8_t *pDest, uint8_t *pSrc, int64_t x, int64_t y, int32_t tileWidth, int32_t tileHeight, int16_t limit, int16_t *xSubSections, int16_t *ySubSections, uint8_t bkgdColor)
+{
+  if (blendMem==NULL) return;
   int rowSize=tileWidth * 3;
   for (int y2=0; y2 < tileHeight; y2 += limit)
   {
