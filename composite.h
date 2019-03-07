@@ -25,6 +25,7 @@ THE SOFTWARE.
 #include <string>
 #include <vector>
 #include <iostream>
+#include <cstdint>
 #include "imagesupport.h"
 #include "tiffsupport.h"
 #include "opencv2/core.hpp"
@@ -43,13 +44,13 @@ inline char separator()
 
 struct Pt
 {
-  int x, y;
+  int64_t x, y;
 };
 
 class JpgXY
 {
 public:
-  int mxPixel, myPixel;
+  int64_t mxPixel, myPixel;
 };
 
 class JpgXYSortForX
@@ -72,9 +73,9 @@ public:
 class JpgFileXY
 {
 public:
-  int mx, my;
-  int mxPixel, myPixel;
-  int mxSortedIndex;
+  int64_t mx, my;
+  int64_t mxPixel, myPixel;
+  int64_t mxSortedIndex;
   std::string mFileName[2][4];
   std::string mBaseFileName;
   std::vector<Pt> border;
@@ -130,15 +131,15 @@ class IniConf
 public:
   const char* mname;
   bool mfound;
-  int mxMin, mxMax, myMin, myMax;
-  int mxDiffMin, myDiffMin;
-  int mxStepSize, myStepSize;
-  int mpixelWidth, mpixelHeight;
+  int64_t mxMin, mxMax, myMin, myMax;
+  int64_t mxDiffMin, myDiffMin;
+  int64_t mxStepSize, myStepSize;
+  int64_t mpixelWidth, mpixelHeight;
   double mxAdj, myAdj;
-  int mtotalTiles;
-  int mxAxis, myAxis;
-  int mtotalWidth, mtotalHeight;
-  int mdetailedWidth, mdetailedHeight;
+  int64_t mtotalTiles;
+  int64_t mxAxis, myAxis;
+  int64_t mtotalWidth, mtotalHeight;
+  int64_t mdetailedWidth, mdetailedHeight;
   bool mIsPreviewSlide;
   int mquality;
   std::vector<JpgFileXY> mxyArr;
@@ -157,23 +158,23 @@ public:
   }
 };
 
-bool drawXHighlight(BYTE *pBmp, int samplesPerPixel, int y1, int x1, int x2, int width, int height, int thickness, int position);
-bool drawYHighlight(BYTE *pBmp, int samplesPerPixel, int x1, int y1, int y2, int width, int height, int thickness, int position);
+bool drawXHighlight(BYTE *pBmp, int samplesPerPixel, int64_t y1, int64_t x1, int64_t x2, int64_t width, int64_t height, int thickness, int position);
+bool drawYHighlight(BYTE *pBmp, int samplesPerPixel, int64_t x1, int64_t y1, int64_t y2, int64_t width, int64_t height, int thickness, int position);
 
 class CompositeSlide {
 protected:
   bool mValidObject;
-  unsigned char mbkgColor;
+  uint8_t mbkgColor;
   std::vector<IniConf*> mConf; 
   static const char* miniNames[4];
   double mxStart, myStart;
   int mlevel;
-  long long mbaseWidth, mbaseHeight;
-  int mxMax, mxMin, myMax, myMin;
+  int64_t mbaseWidth, mbaseHeight;
+  int64_t mxMax, mxMin, myMax, myMin;
   bool mGrayScale;
   int mmagnification;
   int mTotalZLevels, mTotalTopZLevels, mTotalBottomZLevels;
-  int mBestXOffset, mBestYOffset;
+  int64_t mBestXOffset, mBestYOffset;
   bool mDoBorderHighlight;
 public:
   CompositeSlide(); 
@@ -181,35 +182,35 @@ public:
   bool isValidObject() { return mValidObject; }
   void initialize();
   void close();
-  bool open(const std::string& inputDir, bool setGrayScale = false, bool doBorderHighlight = true, int bestXOffset = -1, int bestYOffset = -1); 
-  bool read(int x, int y, int width, int height, bool setGrayScale = false);
-  bool read(BYTE *pBmp, int level, int direction, int zLevel, int x, int y, int width, int height, bool setGrayScale, int *readWidth, int *readHeight);
-  BYTE* allocate(int level, int x, int y, int width, int height, bool setGrayScale = false);
-  bool findXYOffset(int lowerLevel, int higherLevel, int *bestXOffset0, int *bestYOffset0, int *bestXOffset1, int *bestYOffset1, std::fstream& logFile);
+  bool open(const std::string& inputDir, bool setGrayScale = false, bool doBorderHighlight = true, int64_t bestXOffset = -1, int64_t bestYOffset = -1); 
+  bool read(int64_t x, int64_t y, int64_t width, int64_t height, bool setGrayScale = false);
+  bool read(BYTE *pBmp, int level, int direction, int zLevel, int64_t x, int64_t y, int64_t width, int64_t height, bool setGrayScale, int64_t *readWidth, int64_t *readHeight);
+  BYTE* allocate(int level, int64_t x, int64_t y, int64_t width, int64_t height, bool setGrayScale = false);
+  bool findXYOffset(int lowerLevel, int higherLevel, int64_t *bestXOffset0, int64_t *bestYOffset0, int64_t *bestXOffset1, int64_t *bestYOffset1, std::fstream& logFile);
   bool checkLevel(int level);
   bool checkZLevel(int level, int direction, int zLevel); 
   int getTotalZLevels() { return mValidObject == true ? mTotalZLevels : 0; }
   int getTotalBottomZLevels() { return mValidObject == true ? mTotalBottomZLevels : 0; }
   int getTotalTopZLevels() { return mValidObject == true ? mTotalTopZLevels : 0; }
-  static bool testHeader(BYTE*, int);
+  static bool testHeader(BYTE*, int64_t);
   bool isPreviewSlide(size_t level);
   int getMagnification() { return (mValidObject == true ? mmagnification : 0); }
   int getQuality(size_t level) { if (mValidObject == true && level < mConf.size() && mConf[level]->mfound) { return mConf[level]->mquality; } else { return 0; } }
   long long getBaseWidth() { return (mValidObject == true ? mbaseWidth : 0); }
   long long getBaseHeight() { return (mValidObject == true ? mbaseHeight : 0); }
-  int getActualWidth(size_t level) { return (mValidObject == true && level < mConf.size() && mConf[level]->mfound ? mConf[level]->mtotalWidth : 0); }
-  int getActualHeight(size_t level) { return (mValidObject == true && level < mConf.size() && mConf[level]->mfound ? mConf[level]->mtotalHeight : 0); }
+  int64_t getActualWidth(size_t level) { return (mValidObject == true && level < mConf.size() && mConf[level]->mfound ? mConf[level]->mtotalWidth : 0); }
+  int64_t getActualHeight(size_t level) { return (mValidObject == true && level < mConf.size() && mConf[level]->mfound ? mConf[level]->mtotalHeight : 0); }
   double getXAdj(size_t level) { if (mValidObject && level < mConf.size() && mConf[level]->mfound) { return mConf[level]->mxAdj; } else { return 1; }}
   double getYAdj(size_t level) { if (mValidObject && level < mConf.size() && mConf[level]->mfound) { return mConf[level]->myAdj; } else { return 1; }}
-  int getTotalTiles(size_t level) { if (mValidObject && level < mConf.size() && mConf[level]->mfound) { return mConf[level]->mtotalTiles; } else { return 0; }}
-  bool drawBorder(BYTE *pBuff, int samplesPerPixel, int x, int y, int width, int height, int level);
-  void blendLevelsByRegion(BYTE *pDest, BYTE *pSrc, int x, int y, int width, int height, int tileWidth, int tileHeight, double xScaleOut, double yScaleOut, int srcLevel);
+  int64_t getTotalTiles(size_t level) { if (mValidObject && level < mConf.size() && mConf[level]->mfound) { return mConf[level]->mtotalTiles; } else { return 0; }}
+  bool drawBorder(BYTE *pBuff, int samplesPerPixel, int64_t x, int64_t y, int64_t width, int64_t height, int level);
+  void blendLevelsByRegion(BYTE *pDest, BYTE *pSrc, int64_t x, int64_t y, int64_t width, int64_t height, int tileWidth, int tileHeight, double xScaleOut, double yScaleOut, int srcLevel);
 
   std::vector<JpgFileXY>* getTileXYArray(size_t level) { if (mValidObject && level < mConf.size() && mConf[level]->mfound) { return &mConf[level]->mxyArr; } else { return NULL; }}
 
 };
 
-void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, int tileWidth, int tileHeight, int limit, BYTE bkgdColor);
+void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t y, int tileWidth, int tileHeight, int16_t limit, int16_t *xSubSections, int64_t totalXSections, int16_t *ySubSections, int64_t totalYSections, BYTE bkgdColor);
 
 
 class CVMatchCompare 

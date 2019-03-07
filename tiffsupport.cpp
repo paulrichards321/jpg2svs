@@ -51,7 +51,7 @@ bool Tiff::testHeader(BYTE* header, int size)
 }
 
 
-bool Tiff::writeEncodedTile(BYTE* buff, int x, int y, int z)
+bool Tiff::writeEncodedTile(BYTE* buff, unsigned int x, unsigned int y, unsigned int z)
 {
   if (mtif)
   {

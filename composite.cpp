@@ -168,7 +168,7 @@ bool CompositeSlide::checkLevel(int level)
 }
 
 
-bool CompositeSlide::open(const std::string& srcFileName, bool setGrayScale, bool doBorderHighlight, int bestXOffset, int bestYOffset)
+bool CompositeSlide::open(const std::string& srcFileName, bool setGrayScale, bool doBorderHighlight, int64_t bestXOffset, int64_t bestYOffset)
 {
   JpgFileXY jpgxy;
   JpgFileXY jpgxyzstack;                  
@@ -188,8 +188,8 @@ bool CompositeSlide::open(const std::string& srcFileName, bool setGrayScale, boo
   std::string ImageQuality = "ImageQuality";
   std::string inputDir = srcFileName;
   mGrayScale = setGrayScale;
-  //int xAxis, yAxis;
-  //int xOffset, yOffset;
+  //int64_t xAxis, yAxis;
+  //int64_t xOffset, yOffset;
 
   initialize();
 
@@ -453,12 +453,12 @@ bool CompositeSlide::open(const std::string& srcFileName, bool setGrayScale, boo
     std::sort(pConf->mxyArr.begin(), pConf->mxyArr.end(), JpgFileXYSortForX());
     pConf->mxMin = pConf->mxyArr[0].mx;
     pConf->mxMax = pConf->mxyArr[pConf->mtotalTiles-1].mx;
-    for (int i=0; i+1 < pConf->mtotalTiles; i++)
+    for (int64_t i=0; i+1 < pConf->mtotalTiles; i++)
     {
       //logFile << " Sorted: x=" << pConf->xyArr[i].x << " y=" << pConf->xyArr[i].y << std::endl;
       if (pConf->mxyArr[i+1].mx==pConf->mxyArr[i].mx)
       {
-        int diff=pConf->mxyArr[i+1].my - pConf->mxyArr[i].my;
+        int64_t diff=pConf->mxyArr[i+1].my - pConf->mxyArr[i].my;
         if ((diff>0 && diff<pConf->myDiffMin) || (diff>0 && pConf->myDiffMin<1))
         {
           pConf->myDiffMin=diff;
@@ -474,12 +474,12 @@ bool CompositeSlide::open(const std::string& srcFileName, bool setGrayScale, boo
     pConf->myMax=pConf->mxyArr[pConf->mtotalTiles-1].my; // + pConf->yDiffMin;
 
     logFile << "fileName=" << pConf->mname << " yDiffMin=" << pConf->myDiffMin << " yStepSize=" << pConf->myStepSize << " yMin=" << pConf->myMin << " yMax=" << pConf->myMax << " yAxis=" << pConf->myAxis << std::endl;
-    for (int i=0; i+1 < pConf->mtotalTiles; i++)
+    for (int64_t i=0; i+1 < pConf->mtotalTiles; i++)
     {
       //logFile << " Sorted: x=" << pConf->xyArr[i].x << " y=" << pConf->xyArr[i].y << std::endl;
       if (pConf->mxyArr[i+1].my==pConf->mxyArr[i].my)
       {
-        int diff=pConf->mxyArr[i].mx - pConf->mxyArr[i+1].mx;
+        int64_t diff=pConf->mxyArr[i].mx - pConf->mxyArr[i+1].mx;
         if ((diff>0 && diff<pConf->mxDiffMin) || (diff>0 && pConf->mxDiffMin<1)) 
         {
           pConf->mxDiffMin=diff;
@@ -710,7 +710,7 @@ bool CompositeSlide::open(const std::string& srcFileName, bool setGrayScale, boo
   int lowerLevel = -1;
   bool higherLevelFound = false, lowerLevelFound = false;
   //double higherLevelXDiv, higherLevelYDiv;
-  //int zoomedXDetail, zoomedYDetail;
+  //int64_t zoomedXDetail, zoomedYDetail;
   if (mConf[2]->mfound)
   {
     //pHigherConf = mConf[2];
@@ -750,16 +750,16 @@ bool CompositeSlide::open(const std::string& srcFileName, bool setGrayScale, boo
     IniConf* pConf=mConf[fileNum];
     if (pConf->mfound==false) continue;
      
-    for (int i=0; i<pConf->mtotalTiles; i++)
+    for (int64_t i=0; i<pConf->mtotalTiles; i++)
     {
       // missing lines problem occurs in rounding here
       double xPixel=((double)(pConf->mxMax - pConf->mxyArr[i].mx)/(double)pConf->mxAdj);
-      int xPixelInt=(int) round(xPixel);
+      int64_t xPixelInt=(int64_t) round(xPixel);
       if (xPixelInt>0) xPixelInt--;
       pConf->mxyArr[i].mxPixel=xPixelInt; // previous use lround here
       
       double yPixel=((double)(pConf->myMax - pConf->mxyArr[i].my)/(double)pConf->myAdj);
-      int yPixelInt=(int) round(yPixel);
+      int64_t yPixelInt=(int64_t) round(yPixel);
       if (yPixelInt>0) yPixelInt--;
       pConf->mxyArr[i].myPixel=yPixelInt; // previous use lround here
       
@@ -780,8 +780,8 @@ bool CompositeSlide::open(const std::string& srcFileName, bool setGrayScale, boo
   }
   mValidObject = true;
 
-  int bestXOffset0, bestXOffset1;
-  int bestYOffset0, bestYOffset1;
+  int64_t bestXOffset0, bestXOffset1;
+  int64_t bestYOffset0, bestYOffset1;
   if (lowerLevelFound && higherLevelFound)
   {
     findXYOffset(lowerLevel, higherLevel, &bestXOffset0, &bestYOffset0, &bestXOffset1, &bestYOffset1, logFile);
@@ -795,7 +795,7 @@ bool CompositeSlide::open(const std::string& srcFileName, bool setGrayScale, boo
     if (pConf->mfound==false) continue;
     pConf->mxSortedArr.resize(pConf->mxyArr.size());
 
-    for (int i=0; i<pConf->mtotalTiles; i++)
+    for (int64_t i=0; i<pConf->mtotalTiles; i++)
     {
       double xPixel;
       xPixel=((double)(pConf->mxMax - pConf->mxyArr[i].mx)/(double)pConf->mxAdj);
@@ -822,18 +822,18 @@ bool CompositeSlide::open(const std::string& srcFileName, bool setGrayScale, boo
         xPixel += bestXOffset1;
         yPixel += bestYOffset1;
       }
-      pConf->mxyArr[i].mxPixel=(int)xPixel;
-      pConf->mxyArr[i].myPixel=(int)yPixel;
-      pConf->mxSortedArr[i].mxPixel=(int)xPixel;
-      pConf->mxSortedArr[i].myPixel=(int)yPixel;
+      pConf->mxyArr[i].mxPixel=(int64_t)xPixel;
+      pConf->mxyArr[i].myPixel=(int64_t)yPixel;
+      pConf->mxSortedArr[i].mxPixel=(int64_t)xPixel;
+      pConf->mxSortedArr[i].myPixel=(int64_t)yPixel;
       
       logFile << "filename=" << pConf->mxyArr[i].mBaseFileName << " x=" << xPixel << " y=" << yPixel << std::endl;
     }
     std::sort(pConf->mxyArr.begin(), pConf->mxyArr.end());
     std::sort(pConf->mxSortedArr.begin(), pConf->mxSortedArr.end(), JpgXYSortForX());
-    for (int tileNum=0; tileNum< (int) pConf->mxyArr.size(); tileNum++)
+    for (int64_t tileNum=0; tileNum< (int64_t) pConf->mxyArr.size(); tileNum++)
     {
-      for (int tileNum2=0; tileNum2< (int) pConf->mxyArr.size(); tileNum2++)
+      for (int64_t tileNum2=0; tileNum2< (int64_t) pConf->mxyArr.size(); tileNum2++)
       {
         if (pConf->mxSortedArr[tileNum].mxPixel==pConf->mxyArr[tileNum2].mxPixel && pConf->mxyArr[tileNum2].myPixel==pConf->mxSortedArr[tileNum].myPixel)
         {
@@ -878,7 +878,7 @@ bool CompositeSlide::open(const std::string& srcFileName, bool setGrayScale, boo
 }
 
 
-bool CompositeSlide::findXYOffset(int lowerLevel, int higherLevel, int *bestXOffset0, int *bestYOffset0, int *bestXOffset1, int *bestYOffset1, std::fstream& logFile)
+bool CompositeSlide::findXYOffset(int lowerLevel, int higherLevel, int64_t *bestXOffset0, int64_t *bestYOffset0, int64_t *bestXOffset1, int64_t *bestYOffset1, std::fstream& logFile)
 {
   double xMulti0 = mConf[2]->mxAdj / mConf[0]->mxAdj;
   double yMulti0 = mConf[2]->myAdj / mConf[0]->myAdj;
@@ -886,19 +886,19 @@ bool CompositeSlide::findXYOffset(int lowerLevel, int higherLevel, int *bestXOff
   double yMulti1 = mConf[2]->myAdj / mConf[1]->myAdj;
  // double xMulti2 = mConf[1]->mxAdj / mConf[2]->mxAdj;
  // double yMulti2 = mConf[1]->myAdj / mConf[2]->myAdj;
-  //int bestXOffset2, bestYOffset2;
-  *bestXOffset0=(int) lround((((mConf[2]->mxMax - mConf[2]->mxMin) / mConf[2]->mxAdj) * xMulti0) - ((mConf[0]->mxMax - mConf[0]->mxMin) / mConf[0]->mxAdj));
-  *bestYOffset0=(int) lround((((mConf[2]->myMax - mConf[2]->myMin) / mConf[2]->myAdj) * yMulti0) - ((mConf[0]->myMax - mConf[0]->myMin) / mConf[0]->myAdj));
-  *bestXOffset1=(int) lround((((mConf[2]->mxMax - mConf[2]->mxMin) / mConf[2]->mxAdj) * xMulti1) - ((mConf[1]->mxMax - mConf[1]->mxMin) / mConf[1]->mxAdj));
-  *bestYOffset1=(int) lround((((mConf[2]->myMax - mConf[2]->myMin) / mConf[2]->myAdj) * yMulti1) - ((mConf[1]->myMax - mConf[1]->myMin) / mConf[1]->myAdj));
-  //bestXOffset2=(int)((double) (*bestXOffset1 * xMulti2));
-  //bestYOffset2=(int)((double) (*bestYOffset1 * yMulti2));
+  //int64_t bestXOffset2, bestYOffset2;
+  *bestXOffset0=(int64_t) lround((((mConf[2]->mxMax - mConf[2]->mxMin) / mConf[2]->mxAdj) * xMulti0) - ((mConf[0]->mxMax - mConf[0]->mxMin) / mConf[0]->mxAdj));
+  *bestYOffset0=(int64_t) lround((((mConf[2]->myMax - mConf[2]->myMin) / mConf[2]->myAdj) * yMulti0) - ((mConf[0]->myMax - mConf[0]->myMin) / mConf[0]->myAdj));
+  *bestXOffset1=(int64_t) lround((((mConf[2]->mxMax - mConf[2]->mxMin) / mConf[2]->mxAdj) * xMulti1) - ((mConf[1]->mxMax - mConf[1]->mxMin) / mConf[1]->mxAdj));
+  *bestYOffset1=(int64_t) lround((((mConf[2]->myMax - mConf[2]->myMin) / mConf[2]->myAdj) * yMulti1) - ((mConf[1]->myMax - mConf[1]->myMin) / mConf[1]->myAdj));
+  //bestXOffset2=(int64_t)((double) (*bestXOffset1 * xMulti2));
+  //bestYOffset2=(int64_t)((double) (*bestYOffset1 * yMulti2));
   IniConf *pLowerConf = mConf[lowerLevel];
   IniConf *pHigherConf = mConf[higherLevel];
   double xZoomOut = pHigherConf->mxAdj / pLowerConf->mxAdj;
   double yZoomOut = pHigherConf->myAdj / pLowerConf->myAdj;
-  int simulatedWidth = (int) lround((double)pLowerConf->mdetailedWidth / xZoomOut);
-  int simulatedHeight = (int) lround((double)pLowerConf->mdetailedHeight / yZoomOut);
+  int64_t simulatedWidth = (int64_t) lround((double)pLowerConf->mdetailedWidth / xZoomOut);
+  int64_t simulatedHeight = (int64_t) lround((double)pLowerConf->mdetailedHeight / yZoomOut);
   //cv::Mat imgTest = cv::imread(pLowerConf->mxyArr[0].mFileName[0], cv::IMREAD_COLOR); 
   //simulatedWidth += imgTest.cols / xZoomOut;
   //simulatedHeight += imgTest.rows / yZoomOut;
@@ -907,7 +907,7 @@ bool CompositeSlide::findXYOffset(int lowerLevel, int higherLevel, int *bestXOff
   cv::Mat imgComplete1(simulatedHeight, simulatedWidth, CV_8UC3, cv::Scalar(255,255,255));
   logFile << "Reading level " << lowerLevel << " and scaling..." << std::endl;
   std::cout << "Reading level " << lowerLevel << " and scaling..." << std::endl;
-  for (int i=0; i<pLowerConf->mtotalTiles; i++)
+  for (int64_t i=0; i<pLowerConf->mtotalTiles; i++)
   {
     cv::Mat imgPart = cv::imread(pLowerConf->mxyArr[i].mBaseFileName, cv::IMREAD_COLOR); 
     if (imgPart.total()>0)
@@ -915,20 +915,20 @@ bool CompositeSlide::findXYOffset(int lowerLevel, int higherLevel, int *bestXOff
       //************************************************************
       // Find the left and right borders
       //************************************************************
-      cv::Size scaledSize((int)lround(imgPart.cols / xZoomOut), (int)lround(imgPart.rows / yZoomOut));
-      cv::Mat imgScaled((int)scaledSize.width, (int)scaledSize.height, CV_8UC3, cv::Scalar(255,255,255));
+      cv::Size scaledSize((int64_t)lround(imgPart.cols / xZoomOut), (int64_t)lround(imgPart.rows / yZoomOut));
+      cv::Mat imgScaled((int64_t)scaledSize.width, (int64_t)scaledSize.height, CV_8UC3, cv::Scalar(255,255,255));
       cv::resize(imgPart, imgScaled, scaledSize);
 
       double xPixel=((double)((double)(pLowerConf->mxMax - pLowerConf->mxyArr[i].mx)/pLowerConf->mxAdj)/xZoomOut);
       double yPixel=((double)((double)(pLowerConf->myMax - pLowerConf->mxyArr[i].my)/pLowerConf->myAdj)/yZoomOut);
-      int xPixelInt = (int) xPixel;
+      int64_t xPixelInt = (int64_t) xPixel;
       if (xPixelInt > 0) xPixelInt--;
-      int yPixelInt = (int) yPixel;
+      int64_t yPixelInt = (int64_t) yPixel;
       if (yPixelInt > 0) yPixelInt--;
       // std::cout << "xPixel=" << xPixelInt << " yPixel=" << yPixelInt << " scaledSize.width=" << scaledSize.width << " scaledSize.height=" << scaledSize.height << std::endl;
       if (xPixelInt + scaledSize.width <= imgComplete1.cols && yPixelInt + scaledSize.height <= imgComplete1.rows)
       {
-        cv::Mat imgRoi(imgComplete1, cv::Rect(xPixelInt, yPixelInt, (int)scaledSize.width, (int)scaledSize.height)); 
+        cv::Mat imgRoi(imgComplete1, cv::Rect(xPixelInt, yPixelInt, (int64_t)scaledSize.width, (int64_t)scaledSize.height)); 
         imgScaled.copyTo(imgRoi);
         imgRoi.release();
       }
@@ -942,17 +942,17 @@ bool CompositeSlide::findXYOffset(int lowerLevel, int higherLevel, int *bestXOff
   }
   //cv::imshow("Scaled Image", imgComplete1);
 
-  cv::Mat imgComplete2((int)pHigherConf->mdetailedHeight, (int)pHigherConf->mdetailedWidth, CV_8UC3, cv::Scalar(255,255,255));
+  cv::Mat imgComplete2((int64_t)pHigherConf->mdetailedHeight, (int64_t)pHigherConf->mdetailedWidth, CV_8UC3, cv::Scalar(255,255,255));
   //std::cout << "imgComplete2 width " << pHigherConf->detailedWidth << " height: " << pHigherConf->detailedHeight,
   logFile << "Reading level " << higherLevel << " and scaling." << std::endl;
-  for (int i=0; i<pHigherConf->mtotalTiles; i++)
+  for (int64_t i=0; i<pHigherConf->mtotalTiles; i++)
   {
     cv::Mat imgPart = cv::imread(pHigherConf->mxyArr[i].mBaseFileName, cv::IMREAD_COLOR); 
     double xPixel=((double)(pHigherConf->mxMax - pHigherConf->mxyArr[i].mx)/(double)pHigherConf->mxAdj);
     double yPixel=((double)(pHigherConf->myMax - pHigherConf->mxyArr[i].my)/(double)pHigherConf->myAdj);
-    int xPixelInt = (int) xPixel;
+    int64_t xPixelInt = (int64_t) xPixel;
     if (xPixelInt > 0) xPixelInt--;
-    int yPixelInt = (int) yPixel;
+    int64_t yPixelInt = (int64_t) yPixel;
     if (yPixelInt > 0) yPixelInt--;
     //std::cout << "xPixel=" << xPixelInt << " yPixel=" << yPixelInt << " width=" << imgPart.cols << " height=" << imgPart.rows << std::endl;
     if (xPixelInt + imgPart.cols <= imgComplete2.cols && yPixelInt + imgPart.rows <= imgComplete2.rows)
@@ -1006,8 +1006,8 @@ bool CompositeSlide::findXYOffset(int lowerLevel, int higherLevel, int *bestXOff
     diffXs.push_back(diffX);
     diffYs.push_back(diffY);
   }
-  //int medianIndex = 0;
-  int bestXOffset, bestYOffset;
+  //int64_t medianIndex = 0;
+  int64_t bestXOffset, bestYOffset;
   if (mBestXOffset>=0 && mBestYOffset>=0)
   {
     bestXOffset = mBestXOffset;
@@ -1017,7 +1017,7 @@ bool CompositeSlide::findXYOffset(int lowerLevel, int higherLevel, int *bestXOff
   {
     //std::sort(diffXs.begin(), diffXs.end());
     //std::sort(diffYs.begin(), diffYs.end());
-    //int medianIndex = diffXs.size()/2;
+    //int64_t medianIndex = diffXs.size()/2;
     bestXOffset = diffXs[0];
     bestYOffset = diffYs[0];
   }
@@ -1029,7 +1029,7 @@ bool CompositeSlide::findXYOffset(int lowerLevel, int higherLevel, int *bestXOff
   logFile << "Diff X Vector Size: " << diffXs.size() << std::endl;
   logFile << "Best (First in sorted arrays) X, Y alignment: " << bestXOffset << " " << bestYOffset << std::endl;
   logFile << "Alignment array: " << std::endl;
-  for (unsigned int i=0; i<diffXs.size(); i++)
+  for (uint64_t i=0; i<diffXs.size(); i++)
   {
     logFile << " {" << diffXs[i] << "," << diffYs[i] << "} ";
   }
@@ -1050,7 +1050,7 @@ bool CompositeSlide::findXYOffset(int lowerLevel, int higherLevel, int *bestXOff
   //-- Show detected matches
   imshow( "Good Matches", img_matches );
 
-  for( int i = 0; i < (int)good_matches.size(); i++ )
+  for( int64_t i = 0; i < (int64_t)good_matches.size(); i++ )
   { 
     printf( "-- Good Match [%d] Keypoint 1: %d  -- Keypoint 2: %d  \n", i, good_matches[i].queryIdx, good_matches[i].trainIdx ); 
     printf( "-- Average distances x: %i  y: %i", bestXOffset, bestYOffset);
@@ -1062,20 +1062,20 @@ bool CompositeSlide::findXYOffset(int lowerLevel, int higherLevel, int *bestXOff
 }
 
 
-bool CompositeSlide::read(int x, int y, int width, int height, bool setGrayScale)
+bool CompositeSlide::read(int64_t x, int64_t y, int64_t width, int64_t height, bool setGrayScale)
 {
   return false;
 }
 
 
-BYTE* CompositeSlide::allocate(int level, int x, int y, int width, int height, bool setGrayScale)
+BYTE* CompositeSlide::allocate(int level, int64_t x, int64_t y, int64_t width, int64_t height, bool setGrayScale)
 {
-  if (mValidObject==false || level<0 || level > (int) mConf.size() || mConf[level]->mfound==false)
+  if (mValidObject==false || level<0 || level > (int64_t) mConf.size() || mConf[level]->mfound==false)
   {
     return 0;
   }
-  int actualWidth=mConf[level]->mtotalWidth;
-  int actualHeight=mConf[level]->mtotalHeight;
+  int64_t actualWidth=mConf[level]->mtotalWidth;
+  int64_t actualHeight=mConf[level]->mtotalHeight;
   if (x>actualWidth || x<0 || y>actualHeight || y<0)
   {
     std::cerr << "x or y out of bounds: x=" << x << " y=" << y;
@@ -1091,8 +1091,8 @@ BYTE* CompositeSlide::allocate(int level, int x, int y, int width, int height, b
   {
     samplesPerPixel = 1;
   }  
-  int maxWidth=width;
-  int maxHeight=height;
+  int64_t maxWidth=width;
+  int64_t maxHeight=height;
   if (x+width>actualWidth)
   {
     maxWidth=actualWidth-x;
@@ -1102,7 +1102,7 @@ BYTE* CompositeSlide::allocate(int level, int x, int y, int width, int height, b
     maxHeight=actualHeight-y;
   }
  
-  int bmpSize=maxWidth*maxHeight*samplesPerPixel;
+  int64_t bmpSize=maxWidth*maxHeight*samplesPerPixel;
   BYTE *pBmp=new BYTE[bmpSize];
   if (pBmp)
   {
@@ -1112,7 +1112,7 @@ BYTE* CompositeSlide::allocate(int level, int x, int y, int width, int height, b
 }
  
 
-bool CompositeSlide::read(BYTE *pBmp, int level, int direction, int zLevel, int x, int y, int width, int height, bool setGrayScale, int *pReadWidth, int *pReadHeight)
+bool CompositeSlide::read(BYTE *pBmp, int level, int direction, int zLevel, int64_t x, int64_t y, int64_t width, int64_t height, bool setGrayScale, int64_t *pReadWidth, int64_t *pReadHeight)
 {
   /*
   if (level==2 && y>= 1000)
@@ -1121,16 +1121,16 @@ bool CompositeSlide::read(BYTE *pBmp, int level, int direction, int zLevel, int 
     std::cout << " x=" << x << " y=" << y << " width=" << width << " height=" << height << std::endl;
   }
   */
-  //int originalWidth=width;
-  //int originalHeight=height;
+  //int64_t originalWidth=width;
+  //int64_t originalHeight=height;
   *pReadWidth = 0;
   *pReadHeight = 0;
   if (checkZLevel(level, direction, zLevel)==false || checkLevel(level)==false)
   {
     return false;
   }
-  int actualWidth = mConf[level]->mtotalWidth;
-  int actualHeight = mConf[level]->mtotalHeight;
+  int64_t actualWidth = mConf[level]->mtotalWidth;
+  int64_t actualHeight = mConf[level]->mtotalHeight;
   if (x>actualWidth || x<0 || y>actualHeight || y<0)
   {
     std::cerr << "x or y out of bounds: x=" << x << " y=" << y;
@@ -1147,8 +1147,8 @@ bool CompositeSlide::read(BYTE *pBmp, int level, int direction, int zLevel, int 
     samplesPerPixel = 1;
     setGrayScale = true;
   }  
-  int maxWidth=width;
-  int maxHeight=height;
+  int64_t maxWidth=width;
+  int64_t maxHeight=height;
   if (x+width>actualWidth)
   {
     maxWidth=actualWidth-x;
@@ -1158,23 +1158,23 @@ bool CompositeSlide::read(BYTE *pBmp, int level, int direction, int zLevel, int 
     maxHeight=actualHeight-y;
   }
  
-  int bmpSize=maxWidth*maxHeight*samplesPerPixel;
+  int64_t bmpSize=maxWidth*maxHeight*samplesPerPixel;
   IniConf* pConf=mConf[level];
-  int fileWidth=pConf->mpixelWidth;
-  int fileHeight=pConf->mpixelHeight;
-  int widthGrab=0, heightGrab=0;
-  int totalTilesRead=0;
-  for (int tileNum=0; tileNum<pConf->mtotalTiles; tileNum++)
+  int64_t fileWidth=pConf->mpixelWidth;
+  int64_t fileHeight=pConf->mpixelHeight;
+  int64_t widthGrab=0, heightGrab=0;
+  int64_t totalTilesRead=0;
+  for (int64_t tileNum=0; tileNum<pConf->mtotalTiles; tileNum++)
   {
     if (zLevel > 0 && direction > 0 && pConf->mxyArr[tileNum].mzStack[direction-1][zLevel] == false) continue;
-    int xFilePos=pConf->mxyArr[tileNum].mxPixel;
-    int yFilePos=pConf->mxyArr[tileNum].myPixel;
+    int64_t xFilePos=pConf->mxyArr[tileNum].mxPixel;
+    int64_t yFilePos=pConf->mxyArr[tileNum].myPixel;
     if (((x<xFilePos && x+maxWidth>xFilePos) || (x>=xFilePos && x<xFilePos+fileWidth)) &&
         ((y<yFilePos && y+maxHeight>yFilePos) || (y>=yFilePos && y<yFilePos+fileHeight)))
     {
       Jpg *pjpg;
-      int xRead=0;
-      int xWrite=xFilePos-x;
+      int64_t xRead=0;
+      int64_t xWrite=xFilePos-x;
       widthGrab=(x+maxWidth)-xFilePos;
       if (xWrite<0)
       {
@@ -1186,8 +1186,8 @@ bool CompositeSlide::read(BYTE *pBmp, int level, int direction, int zLevel, int 
           widthGrab=maxWidth;
         }
       }
-      int yRead=0;
-      int yWrite=yFilePos-y;
+      int64_t yRead=0;
+      int64_t yWrite=yFilePos-y;
       heightGrab=(y+maxHeight)-yFilePos;
       if (yWrite<0)
       {
@@ -1217,15 +1217,15 @@ bool CompositeSlide::read(BYTE *pBmp, int level, int direction, int zLevel, int 
       pjpg=jpgCache.open(fileName, setGrayScale);
       if (pjpg->isValidObject() && pjpg->read(xRead, yRead, widthGrab, heightGrab))
       {
-        int jpgCX=pjpg->getReadWidth();
-        int jpgCY=pjpg->getReadHeight();
+        int64_t jpgCX=pjpg->getReadWidth();
+        int64_t jpgCY=pjpg->getReadHeight();
         int jpgSamplesPerPixel=pjpg->getSamplesPerPixel();
         BYTE *jpgBitmap=pjpg->bitmapPointer();
-        for (int row=0; row<jpgCY; row++)
+        for (int64_t row=0; row<jpgCY; row++)
         {
       //    std::cout << "read bytes: " << parsedHeight+parsedWidth+(row*maxWidth*3) << std::endl;
       //    std::cout << "jpgBitmap=" << (long long) jpgBitmap << std::endl;
-          int desti=(yWrite*maxWidth*samplesPerPixel)+(xWrite*samplesPerPixel)+(row*maxWidth*samplesPerPixel);
+          int64_t desti=(yWrite*maxWidth*samplesPerPixel)+(xWrite*samplesPerPixel)+(row*maxWidth*samplesPerPixel);
           if (desti+(jpgCX*samplesPerPixel) > bmpSize)
           {
             std::cerr << "In CompositeSlide::read, pointer out of bounds: bmpSize=" << bmpSize << " desti=" << desti << std::endl;
@@ -1262,7 +1262,7 @@ bool CompositeSlide::read(BYTE *pBmp, int level, int direction, int zLevel, int 
 }
 
 
-bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, int width, int height, int level)
+bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int64_t x, int64_t y, int64_t width, int64_t height, int level)
 {
   if (checkLevel(level)==false) return false;
   IniConf *pHigherConf=mConf[level];
@@ -1287,30 +1287,30 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
 
   double xZoomOut = pHigherConf->mxAdj / pLowerConf->mxAdj;
   double yZoomOut = pHigherConf->myAdj / pLowerConf->myAdj;
-  int fileWidth=(int) lround(pLowerConf->mpixelWidth / xZoomOut);
-  int fileHeight=(int) lround(pLowerConf->mpixelHeight / yZoomOut);
-  //int xTolerance=(int)(((double)fileWidth) / 4);
-  //int yTolerance=(int)(((double)fileHeight) / 4);
-  //int xLastPos=-1,yLastPos=-1;
-  //int xNextPos=-1,yNextPos=-1;
-  for (int tileNum=0; tileNum<pLowerConf->mtotalTiles; tileNum++)
+  int64_t fileWidth=(int64_t) lround(pLowerConf->mpixelWidth / xZoomOut);
+  int64_t fileHeight=(int64_t) lround(pLowerConf->mpixelHeight / yZoomOut);
+  //int64_t xTolerance=(int64_t)(((double)fileWidth) / 4);
+  //int64_t yTolerance=(int64_t)(((double)fileHeight) / 4);
+  //int64_t xLastPos=-1,yLastPos=-1;
+  //int64_t xNextPos=-1,yNextPos=-1;
+  for (int64_t tileNum=0; tileNum<pLowerConf->mtotalTiles; tileNum++)
   {
-    int xCurrentPos=(int) lround(pLowerConf->mxyArr[tileNum].mxPixel / xZoomOut);
-    int yCurrentPos=(int) lround(pLowerConf->mxyArr[tileNum].myPixel / yZoomOut);
+    int64_t xCurrentPos=(int64_t) lround(pLowerConf->mxyArr[tileNum].mxPixel / xZoomOut);
+    int64_t yCurrentPos=(int64_t) lround(pLowerConf->mxyArr[tileNum].myPixel / yZoomOut);
     // first check if the x y coordinates are within the region of the bitmap
     
     if (((x<xCurrentPos-default_thickness && x+width>xCurrentPos-default_thickness) || (x>=xCurrentPos-default_thickness && x<xCurrentPos+fileWidth+default_thickness)) &&
        ((y<yCurrentPos-default_thickness && y+height>yCurrentPos-default_thickness) || (y>=yCurrentPos-default_thickness && y<yCurrentPos+fileHeight+default_thickness)))
     {
-      int y2=0, y3=fileHeight;
-      int y4=0, y5=fileHeight;
-      int x2=0, x3=fileWidth;
-      int x4=0, x5=fileWidth;
+      int64_t y2=0, y3=fileHeight;
+      int64_t y4=0, y5=fileHeight;
+      int64_t x2=0, x3=fileWidth;
+      int64_t x4=0, x5=fileWidth;
 
-      for (int tileNum2=0; tileNum2<pLowerConf->mtotalTiles; tileNum2++)
+      for (int64_t tileNum2=0; tileNum2<pLowerConf->mtotalTiles; tileNum2++)
       {
-        int xCurrentPos2=(int) lround(pLowerConf->mxyArr[tileNum2].mxPixel / xZoomOut);
-        int yCurrentPos2=(int) lround(pLowerConf->mxyArr[tileNum2].myPixel / yZoomOut);
+        int64_t xCurrentPos2=(int64_t) lround(pLowerConf->mxyArr[tileNum2].mxPixel / xZoomOut);
+        int64_t yCurrentPos2=(int64_t) lround(pLowerConf->mxyArr[tileNum2].myPixel / yZoomOut);
         if (xCurrentPos2==xCurrentPos && yCurrentPos2==yCurrentPos) continue;
         
         //********************************************************************
@@ -1322,7 +1322,7 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
         {
           if (yCurrentPos2 < yCurrentPos)
           {
-            int y2b=(yCurrentPos2 + fileHeight) - yCurrentPos;
+            int64_t y2b=(yCurrentPos2 + fileHeight) - yCurrentPos;
             if (y2b > y2)
             {
               y2=y2b;
@@ -1330,7 +1330,7 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
           }
           else
           {
-            int y3b=yCurrentPos2 - yCurrentPos;
+            int64_t y3b=yCurrentPos2 - yCurrentPos;
             if (y3b < y3)
             {
               y3=y3b;
@@ -1345,7 +1345,7 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
         {
           if (yCurrentPos2 < yCurrentPos)
           {
-            int y4b=(yCurrentPos2 + fileHeight) - yCurrentPos;
+            int64_t y4b=(yCurrentPos2 + fileHeight) - yCurrentPos;
             if (y4b > y4)
             {
               y4=y4b;
@@ -1353,7 +1353,7 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
           }
           else
           {
-            int y5b=yCurrentPos2 - yCurrentPos;
+            int64_t y5b=yCurrentPos2 - yCurrentPos;
             if (y5b < y5)
             {
               y5=y5b;
@@ -1373,7 +1373,7 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
         {
           if (xCurrentPos2 < xCurrentPos)
           {
-            int x2b=(xCurrentPos2 + fileWidth) - xCurrentPos;
+            int64_t x2b=(xCurrentPos2 + fileWidth) - xCurrentPos;
             if (x2b > x2)
             {
               x2=x2b;
@@ -1381,7 +1381,7 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
           }
           else
           {
-            int x3b=xCurrentPos2 - xCurrentPos;
+            int64_t x3b=xCurrentPos2 - xCurrentPos;
             if (x3b < x3)
             {
               x3=x3b;
@@ -1402,7 +1402,7 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
         {
           if (xCurrentPos2 < xCurrentPos)
           {
-            int x4b=(xCurrentPos2 + fileWidth) - xCurrentPos;
+            int64_t x4b=(xCurrentPos2 + fileWidth) - xCurrentPos;
             if (x4b > x4)
             {
               x4=x4b;
@@ -1410,7 +1410,7 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
           }
           else
           {
-            int x5b=xCurrentPos2 - xCurrentPos;
+            int64_t x5b=xCurrentPos2 - xCurrentPos;
             if (x5b < x5)
             {
               x5=x5b;
@@ -1420,9 +1420,9 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
       }
       if (y2 < y3)
       {
-        int yWrite1=(yCurrentPos+y2)-y;
-        int yWrite2=(yCurrentPos+y3)-y;
-        //int yWrite2=yWrite1+y3;
+        int64_t yWrite1=(yCurrentPos+y2)-y;
+        int64_t yWrite2=(yCurrentPos+y3)-y;
+        //int64_t yWrite2=yWrite1+y3;
         if (yWrite1 < 0) 
         {
           //yWrite2=y3+yWrite1;
@@ -1436,8 +1436,8 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
         {
           yWrite2=height;
         }
-        int xLineMark=xCurrentPos-x-default_thickness;
-        int thickness;
+        int64_t xLineMark=xCurrentPos-x-default_thickness;
+        int64_t thickness;
         if (xLineMark < 0)
         {
           thickness=xLineMark+default_thickness;
@@ -1455,8 +1455,8 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
       }
       if (y4 < y5)
       {
-        int yWrite1=(yCurrentPos+y4)-y;
-        int yWrite2=(yCurrentPos+y5)-y;
+        int64_t yWrite1=(yCurrentPos+y4)-y;
+        int64_t yWrite2=(yCurrentPos+y5)-y;
         if (yWrite1 < 0) 
         {
           yWrite1=0;
@@ -1469,8 +1469,8 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
         {
           yWrite2=height;
         }
-        int xLineMark=(xCurrentPos+fileWidth)-x;
-        int thickness;
+        int64_t xLineMark=(xCurrentPos+fileWidth)-x;
+        int64_t thickness;
         if (xLineMark<0)
         {
           thickness=xLineMark+default_thickness;
@@ -1488,9 +1488,9 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
       }
       if (x2 < x3)
       {
-        int xWrite1=(xCurrentPos+x2)-x;
-        int xWrite2=(xCurrentPos+x3)-x;
-        //int xWrite2=xWrite1+x3;
+        int64_t xWrite1=(xCurrentPos+x2)-x;
+        int64_t xWrite2=(xCurrentPos+x3)-x;
+        //int64_t xWrite2=xWrite1+x3;
         if (xWrite1 < 0) 
         {
           //xWrite2=x3+xWrite1;
@@ -1504,8 +1504,8 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
         {
           xWrite2=width;
         }
-        int thickness;
-        int yLineMark=yCurrentPos-y-default_thickness;
+        int64_t thickness;
+        int64_t yLineMark=yCurrentPos-y-default_thickness;
         if (yLineMark < 0)
         {
           thickness=yLineMark + default_thickness;
@@ -1524,8 +1524,8 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
       }
       if (x4 < x5)
       {
-        int xWrite1=(xCurrentPos+x4)-x;
-        int xWrite2=(xCurrentPos+x5)-x;
+        int64_t xWrite1=(xCurrentPos+x4)-x;
+        int64_t xWrite2=(xCurrentPos+x5)-x;
         if (xWrite1 < 0) 
         {
           xWrite1=0;
@@ -1538,8 +1538,8 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
         {
           xWrite2=width;
         }
-        int yLineMark=(yCurrentPos+fileHeight)-y;
-        int thickness;
+        int64_t yLineMark=(yCurrentPos+fileHeight)-y;
+        int64_t thickness;
         if (yLineMark < 0)
         {
           thickness=yLineMark + default_thickness;
@@ -1562,53 +1562,53 @@ bool CompositeSlide::drawBorder(BYTE *pBmp, int samplesPerPixel, int x, int y, i
 }
 
 
-void CompositeSlide::blendLevelsByRegion(BYTE *pDest, BYTE *pSrc, int x, int y, int width, int height, int tileWidth, int tileHeight, double xScaleOut, double yScaleOut, int srcLevel)
+void CompositeSlide::blendLevelsByRegion(BYTE *pDest, BYTE *pSrc, int64_t x, int64_t y, int64_t width, int64_t height, int tileWidth, int tileHeight, double xScaleOut, double yScaleOut, int srcLevel)
 {
   if (checkLevel(srcLevel)==false) return;
   IniConf *pLowerConf=mConf[srcLevel];
-  int fileWidth=pLowerConf->mpixelWidth;
-  int fileHeight=pLowerConf->mpixelHeight;
-  int tileSize = tileWidth * tileHeight * 3;
+  int64_t fileWidth=pLowerConf->mpixelWidth;
+  int64_t fileHeight=pLowerConf->mpixelHeight;
+  int64_t tileSize = tileWidth * tileHeight * 3;
 
-  for (int tileNum=0; tileNum<pLowerConf->mtotalTiles; tileNum++)
+  for (int64_t tileNum=0; tileNum<pLowerConf->mtotalTiles; tileNum++)
   {
-    int xCurrentPos=(int) pLowerConf->mxyArr[tileNum].mxPixel;
-    int yCurrentPos=(int) pLowerConf->mxyArr[tileNum].myPixel;
+    int64_t xCurrentPos=(int64_t) pLowerConf->mxyArr[tileNum].mxPixel;
+    int64_t yCurrentPos=(int64_t) pLowerConf->mxyArr[tileNum].myPixel;
     // first check if the x y coordinates are within the region of the bitmap
     if (((x<xCurrentPos && x+width>xCurrentPos) || (x>=xCurrentPos && x<xCurrentPos+fileWidth)) &&
        ((y<yCurrentPos && y+height>yCurrentPos) || (y>=yCurrentPos && y<yCurrentPos+fileHeight)))
     {
-      int y2=yCurrentPos;
+      int64_t y2=yCurrentPos;
       if (y2 < y)
       {
         y2 = y;
       }
       y2 = y2 - y;
-      int y3=yCurrentPos + fileHeight;
+      int64_t y3=yCurrentPos + fileHeight;
       if (y3 > y+height)
       {
         y3 = y + height;
       }
       y3 = y3 - y;
-      int x2=xCurrentPos;
+      int64_t x2=xCurrentPos;
       if (x2 < x)
       {
         x2 = x;
       }
       x2 = x2 - x;
-      int x3=xCurrentPos + fileWidth;
+      int64_t x3=xCurrentPos + fileWidth;
       if (x3 > x+width)
       {
         x3 = x + width;
       }
       x3 = x3 - x;
-      int yMax = (int) ceil((double) y3 * yScaleOut);
+      int64_t yMax = (int64_t) ceil((double) y3 * yScaleOut);
       if (yMax > tileHeight) 
       {
         yMax=tileHeight;
       }
-      int offset = (int) floor((double) x2 * xScaleOut) * 3;
-      int rowSize2 = (int) ceil((double) (x3-x2) * xScaleOut) * 3;
+      int64_t offset = (int64_t) floor((double) x2 * xScaleOut) * 3;
+      int64_t rowSize2 = (int64_t) ceil((double) (x3-x2) * xScaleOut) * 3;
       if (offset > tileWidth * 3)
       {
         continue;
@@ -1617,9 +1617,9 @@ void CompositeSlide::blendLevelsByRegion(BYTE *pDest, BYTE *pSrc, int x, int y, 
       {
         continue;
       }
-      for (int y4 = (int) round(y2 * yScaleOut); y4 < yMax; y4++)
+      for (int64_t y4 = (int64_t) round(y2 * yScaleOut); y4 < yMax; y4++)
       {
-        int offset2=(y4 * tileWidth * 3)+offset;
+        int64_t offset2=(y4 * tileWidth * 3)+offset;
         if (offset2 + rowSize2 <= tileSize)
         {
           memcpy(&pDest[offset2], &pSrc[offset2], rowSize2);
@@ -1630,40 +1630,46 @@ void CompositeSlide::blendLevelsByRegion(BYTE *pDest, BYTE *pSrc, int x, int y, 
 }
 
 
-void CompositeSlide::initializeBlendMem(int64_t width, int32_t tileWidth, int16_t limit)
+void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t y, int tileWidth, int tileHeight, int16_t limit, int16_t *xSubSections, int64_t totalXSections, int16_t *ySubSections, int64_t totalYSections, BYTE bkgdColor)
 {
-  if (blendMem) delete[] blendMem;
-  blendMem=NULL;
-  int64_t size=width * 3;
-  blendMem=new uint8_t[size];
-}
-
-
-void CompositeSlide::blendLevelsByBkgd(uint8_t *pDest, uint8_t *pSrc, int64_t x, int64_t y, int32_t tileWidth, int32_t tileHeight, int16_t limit, int16_t *xSubSections, int16_t *ySubSections, uint8_t bkgdColor)
-{
-  if (blendMem==NULL) return;
-  int rowSize=tileWidth * 3;
+  int destTileWidth=tileWidth - limit;
+  int destTileHeight=tileHeight - limit;
+  int destRowSize=destTileWidth * 3;
+  int srcRowSize=tileWidth * 3;
   for (int y2=0; y2 < tileHeight; y2 += limit)
   {
     int xSubSection = y2 / limit;
-    int xMatches = xSubSections[xSubSection];
+    int16_t xMatches = 0;
+    if (xSubSection < totalXSections)
+    {
+      xMatches = xSubSections[xSubSection];
+    }
     int yLimit = limit;
     if (y2 + limit > tileHeight) yLimit = tileHeight - y2;
-    register BYTE *pDest2 = &pDest[y2 * rowSize];
+    register BYTE *pSrc2 = &pSrc[y2 * srcRowSize];
+    register BYTE *pDest2 = &pDest[y2 * destRowSize];
     register int x2 = 0;
     while (x2 < tileWidth)
     {
+      int64_t ySubSection = (x+x2) / limit;
+      int16_t yMatches = 0;
+      if (ySubSection < totalYSections)
+      {
+        yMatches = ySubSections[ySubSection];
+      }
       int xLimit = limit;
       if (x2 + limit > tileWidth) xLimit = tileWidth - x2;
       int xMin = xLimit;
       int xMax = -1;
-      register BYTE *pDestSubTileEnd = &pDest2[xLimit * 3];
+      int yMin = yLimit;
+      int yMax = -1;
       register int x3=0;
-      while (pDest2 < pDestSubTileEnd)
+      while (x3 < xLimit)
       {
         register BYTE *pDest3 = pDest2;
-        register BYTE *pDestColEnd = &pDest2[yLimit * rowSize];
-        while (pDest3 < pDestColEnd)
+        register BYTE *pSrc3 = pSrc2;
+        register int y3 = 0;
+        while (y3 < yLimit)
         {
           if (*pDest3 < bkgdColor || pDest3[1] < bkgdColor || pDest3[2] < bkgdColor)
           {
@@ -1675,34 +1681,106 @@ void CompositeSlide::blendLevelsByBkgd(uint8_t *pDest, uint8_t *pSrc, int64_t x,
             {
               xMax = x3;
             }
+            if (y3 < yMin)
+            {
+              yMin = y3;
+            }
+            if (y3 > yMax)
+            {
+              yMax = y3;
+            }
           }
-          pDest3 += rowSize;
+          if (x3+x2 < destTileWidth && y3+y2 < destTileHeight)
+          {
+            *pDest3 = *pSrc3;
+            pDest3[1] = pSrc3[1];
+            pDest3[2] = pSrc3[2];
+          }
+          pDest3 += destRowSize;
+          pSrc3 += srcRowSize;
+          y3++;
         }
         pDest2 += 3;
+        pSrc2 += 3;
         x3++;
       }
       xMax++;
-      if ((xMax != 0 || x+xLimit >= tileWidth) && xMatches+xMin >= limit)
+      if ((xMax != 0 || x2+xLimit >= tileWidth) && xMatches+xMin >= limit && y2<destTileHeight && x2-xMatches < destTileWidth)
       {
-        register int offset = (y2 * rowSize) + ((x2-xMatches) * 3);
+        if (x2-xMatches < 0)
+        {
+          xMatches = x2;
+        }
+        register int offset = (y2 * destRowSize) + ((x2-xMatches) * 3);
         register BYTE *pDest3 = &pDest[offset];
-        register int copySize = (xMatches+xLimit) * 3;
-        register BYTE *pSrc3 = &pSrc[offset];
-        register BYTE *pSrcColEnd=pSrc3 + (yLimit * rowSize);
-        while (pSrc3 < pSrcColEnd)
+        register BYTE *pSrc3 = &pSrcL2[offset];
+        register BYTE *pSrcColEnd=pSrc3 + (yLimit * destRowSize);
+        register BYTE *pSrcEnd = &pSrcL2[destTileHeight * destTileWidth * 3];
+        //register int copySize = (xMatches+xLimit) * 3;
+        register int copySize;
+        if (x2-xMatches+xLimit > destTileWidth)
+        {
+          copySize = (destTileWidth-(x2-xMatches)) * 3;
+        }
+        else
+        {
+          copySize = (xMatches+xLimit) * 3;
+        }
+        while (pSrc3+copySize < pSrcColEnd && pSrc3+copySize < pSrcEnd)
         {
           memcpy(pDest3, pSrc3, copySize);
-          pSrc3 += rowSize;
-          pDest3 += rowSize;
+          pSrc3 += destRowSize;
+          pDest3 += destRowSize;
         }
         xMatches = 0;
       }
+      yMax++;
+      if ((yMax != 0 || y2+yLimit>=tileHeight) && yMatches+yMin >= limit && x2<destTileWidth && y2-yMatches < destTileHeight)
+      {
+        if (y2-yMatches < 0)
+        {
+          yMatches = y2;
+        }
+        register int offset = ((y2-yMatches) * destRowSize) + (x2 * 3);
+        register BYTE *pDest3 = &pDest[offset];
+        register int copySize = xLimit * 3;
+        register BYTE *pSrc3 = &pSrcL2[offset];
+        register int colEnd;
+        if (y2-yMatches+yLimit > destTileHeight)
+        {
+          colEnd=(destTileHeight-(y2-yMatches))*destRowSize;
+        }
+        else
+        {
+          colEnd=(y2-yMatches+yLimit)*destRowSize;
+        }
+        register BYTE *pSrcColEnd=&pSrc3[colEnd];
+        register BYTE *pSrcEnd=&pSrcL2[destTileHeight * destTileWidth * 3];
+        while (pSrc3+copySize < pSrcColEnd && pSrc3+copySize < pSrcEnd)
+        {
+          memcpy(pDest3, pSrc3, copySize);
+          pSrc3 += destRowSize;
+          pDest3 += destRowSize;
+        }
+        yMatches = 0;
+      }
       xMatches += (xLimit - xMax);
+      yMatches += (yLimit - yMax);
+      if (y2 < destTileHeight && x2 < destTileWidth)
+      {
+        if (ySubSection < totalYSections)
+        {
+          ySubSections[ySubSection] = yMatches;
+        }
+        if (xSubSection < totalXSections)
+        {
+          xSubSections[xSubSection] = xMatches;
+        }
+      }
       x2 += xLimit;
     }
-    xSubSections[xSubSection] = xMatches;
   }
-
+  /*
   for (int x2=0; x2 < tileWidth; x2 += limit)
   {
     int ySubSection = x / limit;
@@ -1714,7 +1792,7 @@ void CompositeSlide::blendLevelsByBkgd(uint8_t *pDest, uint8_t *pSrc, int64_t x,
     {
       int yLimit = limit;
       if (y2 + limit > tileHeight) yLimit = tileHeight - y2;
-      register BYTE *pDest2 = &pDest[(y2 * rowSize) + (x * 3)];
+      register BYTE *pDest2 = &pDest[(y2 * rowSize) + (x2 * 3)];
       int yMin = yLimit;
       int yMax = -1;
       register BYTE *pDestSubTileEnd = &pDest2[xLimit * 3];
@@ -1744,6 +1822,10 @@ void CompositeSlide::blendLevelsByBkgd(uint8_t *pDest, uint8_t *pSrc, int64_t x,
       yMax++;
       if ((yMax != 0 || y2+yLimit>=tileHeight) && yMatches+yMin >= limit)
       {
+        if (y2-yMatches < 0)
+        {
+          yMatches = y2;
+        }
         register int offset = ((y2-yMatches) * rowSize) + (x2 * 3);
         register BYTE *pDest3 = &pDest[offset];
         register int copySize = xLimit * 3;
@@ -1762,6 +1844,7 @@ void CompositeSlide::blendLevelsByBkgd(uint8_t *pDest, uint8_t *pSrc, int64_t x,
     }
     ySubSections[ySubSection] = yMatches;
   }
+  */
 }
 
 /*
@@ -1857,7 +1940,7 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, int tileWidth, int tileHeight, i
 */
 
 
-bool drawXHighlight(BYTE *pBmp, int samplesPerPixel, int y1, int x1, int x2, int width, int height, int thickness, int position)
+bool drawXHighlight(BYTE *pBmp, int samplesPerPixel, int64_t y1, int64_t x1, int64_t x2, int64_t width, int64_t height, int thickness, int position)
 {
   if (x1 < 0 || x2 < 0 || y1 < 0)
   {
@@ -1867,7 +1950,7 @@ bool drawXHighlight(BYTE *pBmp, int samplesPerPixel, int y1, int x1, int x2, int
   }
   if (x1 > x2)
   {
-    int x3=x1;
+    int64_t x3=x1;
     x1=x2;
     x2=x3;
   }
@@ -1877,14 +1960,14 @@ bool drawXHighlight(BYTE *pBmp, int samplesPerPixel, int y1, int x1, int x2, int
     //std::cerr << " y1=" << y1 << " x1=" << x1 << " x2=" << x2 << " width=" << width << " height=" << height << std::endl;
     return false;
   }
-  int bmpSize = width * height * samplesPerPixel;
+  int64_t bmpSize = width * height * samplesPerPixel;
   if (samplesPerPixel==3 || samplesPerPixel==4)
   {
     while (thickness > 0)
     {
       thickness--;
-      int offset = (width * samplesPerPixel * (y1+(thickness*position))) + (x1 * samplesPerPixel);
-      for (int x3=x1; x3 < x2 && offset+2 < bmpSize; x3++, offset+=samplesPerPixel)
+      int64_t offset = (width * samplesPerPixel * (y1+(thickness*position))) + (x1 * samplesPerPixel);
+      for (int64_t x3=x1; x3 < x2 && offset+2 < bmpSize; x3++, offset+=samplesPerPixel)
       {
         pBmp[offset] = 0;
         pBmp[offset+1] = 0;
@@ -1897,8 +1980,8 @@ bool drawXHighlight(BYTE *pBmp, int samplesPerPixel, int y1, int x1, int x2, int
     while (thickness > 0)
     {
       thickness--;
-      int offset = (width * (y1+(thickness*position))) + x1;
-      for (int x3=x1; x3 < x2 && offset < bmpSize; x3++, offset++)
+      int64_t offset = (width * (y1+(thickness*position))) + x1;
+      for (int64_t x3=x1; x3 < x2 && offset < bmpSize; x3++, offset++)
       {
         pBmp[offset] = 0;
       }
@@ -1908,7 +1991,7 @@ bool drawXHighlight(BYTE *pBmp, int samplesPerPixel, int y1, int x1, int x2, int
 }
 
 
-bool drawYHighlight(BYTE *pBmp, int samplesPerPixel, int x1, int y1, int y2, int width, int height, int thickness, int position)
+bool drawYHighlight(BYTE *pBmp, int samplesPerPixel, int64_t x1, int64_t y1, int64_t y2, int64_t width, int64_t height, int thickness, int position)
 {
   if (y1 < 0 || y2 < 0 || x1 < 0)
   {
@@ -1918,7 +2001,7 @@ bool drawYHighlight(BYTE *pBmp, int samplesPerPixel, int x1, int y1, int y2, int
   }
   if (y1 > y2)
   {
-    int y3=y1;
+    int64_t y3=y1;
     y1=y2;
     y2=y3;
   }
@@ -1928,15 +2011,15 @@ bool drawYHighlight(BYTE *pBmp, int samplesPerPixel, int x1, int y1, int y2, int
     std::cerr << " x1=" << x1 << " y1=" << y1 << " y2=" << y2 << " width=" << width << " height=" << height << std::endl;
     return false;
   }
-  int bmpSize=width * height * samplesPerPixel;
+  int64_t bmpSize=width * height * samplesPerPixel;
   if (samplesPerPixel==3 || samplesPerPixel==4)
   {
     while (thickness>0)
     {
       thickness--;
-      for (int y3=y1; y3 < y2; y3++)
+      for (int64_t y3=y1; y3 < y2; y3++)
       {
-        int offset = (width * samplesPerPixel * y3) + ((x1+(thickness*position)) * samplesPerPixel);
+        int64_t offset = (width * samplesPerPixel * y3) + ((x1+(thickness*position)) * samplesPerPixel);
         if (offset+2 < bmpSize)
         {
           pBmp[offset] = 0;
@@ -1951,9 +2034,9 @@ bool drawYHighlight(BYTE *pBmp, int samplesPerPixel, int x1, int y1, int y2, int
     while (thickness>0)
     {
       thickness--;
-      for (int y3=y1; y3 < y2; y3++)
+      for (int64_t y3=y1; y3 < y2; y3++)
       {
-        int offset = (width * y3) + x1+(thickness*position);
+        int64_t offset = (width * y3) + x1+(thickness*position);
         if (offset < bmpSize)
         {
           pBmp[offset] = 0;
@@ -1966,7 +2049,7 @@ bool drawYHighlight(BYTE *pBmp, int samplesPerPixel, int x1, int y1, int y2, int
 
 
 
-bool CompositeSlide::testHeader(BYTE* fileHeader, int length)
+bool CompositeSlide::testHeader(BYTE* fileHeader, int64_t length)
 {
   std::string headerStr = (const char*) fileHeader;
   std::string header = "header";

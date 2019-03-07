@@ -44,7 +44,7 @@ public:
 	bool setAttributes(int newSamplesPerPixel, int newBitsPerSample, int newImageWidth, int newImageHeight, int newTileWidth, int newTileHeight, int newTileDepth, int quality);
   bool setDescription(std::string& strAttributes, int baseWidth, int baseHeight);
   bool writeDirectory();
-  bool writeEncodedTile(BYTE* buff, int x, int y, int z);
+  bool writeEncodedTile(BYTE* buff, unsigned int x, unsigned int y, unsigned int z);
   bool writeImage(BYTE* buff);
   Tiff() { mtif=0; mquality=70; }
 	~Tiff() { }

@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *************************************************************************/
 #include <cstring>
 #include <cstdarg>
+#include <cstdint>
 #include <fstream>
 #include "imagesupport.h"
 
@@ -177,27 +178,27 @@ bool Image::rotateAlgorithm1()
   merrMsg.str("");
   
   // dprintf("Source bitmap:\n");
-  //for (uint z = 0; z < bitmapSize; z++)
+  //for (uint64_t z = 0; z < bitmapSize; z++)
   //{
-  //  dprintf("%X", (uint)pBitmap[z]);
+  //  dprintf("%X", (unsigned int)pBitmap[z]);
     //if (z > 0 && z % 10 == 0) dprintf("\n");
   //}
   //dprintf("\n");
 
-  int newWidth = mactualHeight;
-  int newHeight = mactualWidth;
+  int64_t newWidth = mactualHeight;
+  int64_t newHeight = mactualWidth;
 
-  int srcUnpaddedScanlineBits = mactualWidth * mbitCount;
-  int srcPaddedScanlineBits = srcUnpaddedScanlineBits;
-  while (srcPaddedScanlineBits & (sizeof(uint)*8-1)) srcPaddedScanlineBits++;
+  int64_t srcUnpaddedScanlineBits = mactualWidth * mbitCount;
+  int64_t srcPaddedScanlineBits = srcUnpaddedScanlineBits;
+  while (srcPaddedScanlineBits & (sizeof(uint64_t)*8-1)) srcPaddedScanlineBits++;
   
-  int destUnpaddedScanlineBits = newWidth * mbitCount;
-  int destPaddedScanlineBits = destUnpaddedScanlineBits;
-  while (destPaddedScanlineBits & (sizeof(uint)*8-1)) destPaddedScanlineBits++;
+  int64_t destUnpaddedScanlineBits = newWidth * mbitCount;
+  int64_t destPaddedScanlineBits = destUnpaddedScanlineBits;
+  while (destPaddedScanlineBits & (sizeof(uint64_t)*8-1)) destPaddedScanlineBits++;
 
-  mbitmapSize = int(ceil(double(destPaddedScanlineBits)/8)) * newHeight;
+  mbitmapSize = int64_t(ceil(double(destPaddedScanlineBits)/8)) * newHeight;
 
-  BYTE *pNewBitmap = new(std::nothrow) BYTE[mbitmapSize+sizeof(uint)];
+  BYTE *pNewBitmap = new(std::nothrow) BYTE[mbitmapSize+sizeof(uint64_t)];
   if (pNewBitmap == NULL) 
   {
     merrMsg << "Insufficient memory to rotate '" << mfileName << "'";
@@ -205,8 +206,8 @@ bool Image::rotateAlgorithm1()
   }
   memset(pNewBitmap, 0, mbitmapSize);
 
-  uint src, dest; // these two values are the offset in bits
-  uint x, y; // points on the source image
+  uint64_t src, dest; // these two values are the offset in bits
+  uint64_t x, y; // points on the source image
 
   for (y = 0; y < mactualHeight; y++) 
   {
@@ -215,7 +216,7 @@ bool Image::rotateAlgorithm1()
     for (x = 0; x < mactualWidth; x++, src += mbitCount) 
     {
       // read a small chunk from the image bit array
-      uint srcchunk = *reinterpret_cast<uint*>(&mpBitmap[src/8]);
+      uint32_t srcchunk = *reinterpret_cast<uint32_t*>(&mpBitmap[src/8]);
       // if the bit depth of image is less than 8, the bits we are trying to access
       // might be inside, or left of the srcchunk bit array
       // dprintf("\nsrcchunk location: %i\n", src);
@@ -226,7 +227,7 @@ bool Image::rotateAlgorithm1()
       if (mbitCount < 8)
         srcchunk = srcchunk >> ((8 - mbitCount) - (src % 8));
       // create a mask that will turn all the unwanted bits to zeros
-      uint mask = ~(-1 << mbitCount);
+      uint32_t mask = ~(-1 << mbitCount);
       srcchunk = srcchunk & mask;
       // dprintf("srcchunk after mask: %X\n", srcchunk);
       
@@ -240,12 +241,12 @@ bool Image::rotateAlgorithm1()
       // dprintf("destchunk location: %i\n", dest);
       // we need to read a chunk from the destination array in case
       // the bit depth is less than 8
-      uint destchunk = *reinterpret_cast<uint*>(&pNewBitmap[dest/8]);
+      uint32_t destchunk = *reinterpret_cast<uint32_t*>(&pNewBitmap[dest/8]);
       // dprintf("destchunk pulled from memory: %X\n", destchunk);
             
       // modify the right bits only, leave alone the rest
       destchunk = destchunk | srcchunk;
-      *reinterpret_cast<uint*>(&pNewBitmap[dest/8]) = destchunk;
+      *reinterpret_cast<uint32_t*>(&pNewBitmap[dest/8]) = destchunk;
       //dprintf("destchunk after OR: %X\n", destchunk);
       //dprintf("destchunk goes to: %i\n", dest);
     }
@@ -265,9 +266,9 @@ bool Image::rotateAlgorithm1()
   
   /*
   dprintf("Destination bitmap:\n");
-  for (uint z = 0; z < bitmapSize; z++)
+  for (uint64_t z = 0; z < bitmapSize; z++)
   {
-    dprintf("%X", (uint)pBitmap[z]);
+    dprintf("%X", (unsigned int)pBitmap[z]);
     //if (z > 0 && z % 10 == 0) dprintf("\n");
   }
   dprintf("\n"); */
@@ -282,20 +283,20 @@ bool Image::rotateAlgorithm2()
 {
   merrMsg.str("");
   
-  int newWidth = mactualHeight;
-  int newHeight = mactualWidth;
+  int64_t newWidth = mactualHeight;
+  int64_t newHeight = mactualWidth;
 
-  int srcUnpaddedScanlineBits = mactualWidth * mbitCount;
-  int srcPaddedScanlineBits = srcUnpaddedScanlineBits;
-  while (srcPaddedScanlineBits & (sizeof(uint)*8-1)) srcPaddedScanlineBits++;
+  int64_t srcUnpaddedScanlineBits = mactualWidth * mbitCount;
+  int64_t srcPaddedScanlineBits = srcUnpaddedScanlineBits;
+  while (srcPaddedScanlineBits & (sizeof(uint64_t)*8-1)) srcPaddedScanlineBits++;
   
-  int destUnpaddedScanlineBits = newWidth * mbitCount;
-  int destPaddedScanlineBits = destUnpaddedScanlineBits;
-  while (destPaddedScanlineBits & (sizeof(uint)*8-1)) destPaddedScanlineBits++;
+  int64_t destUnpaddedScanlineBits = newWidth * mbitCount;
+  int64_t destPaddedScanlineBits = destUnpaddedScanlineBits;
+  while (destPaddedScanlineBits & (sizeof(uint64_t)*8-1)) destPaddedScanlineBits++;
 
-  mbitmapSize = int(ceil(double(destPaddedScanlineBits)/8)) * newHeight;
+  mbitmapSize = int64_t(ceil(double(destPaddedScanlineBits)/8)) * newHeight;
 
-  BYTE* pNewBitmap = new(std::nothrow) BYTE[mbitmapSize+sizeof(uint)];
+  BYTE* pNewBitmap = new(std::nothrow) BYTE[mbitmapSize+sizeof(uint64_t)];
   if (pNewBitmap == NULL) 
   {
     merrMsg << "Insufficient memory to rotate '" << mfileName << "'";
@@ -303,8 +304,8 @@ bool Image::rotateAlgorithm2()
   }
   memset(pNewBitmap, 0, mbitmapSize);
 
-  uint src, dest; // these two values are the offset in bits
-  uint x, y; // points on the source image
+  uint64_t src, dest; // these two values are the offset in bits
+  uint64_t x, y; // points on the source image
 
   for (y = 0; y < mactualHeight; y++) 
   {
@@ -312,7 +313,7 @@ bool Image::rotateAlgorithm2()
     for (x = 0; x < mactualWidth; x++, src += mbitCount) 
     {
       // read a small chunk from the image bit array
-      uint srcchunk = *reinterpret_cast<uint*>(&mpBitmap[src/8]);
+      uint32_t srcchunk = *reinterpret_cast<uint32_t*>(&mpBitmap[src/8]);
       // if the bit depth of image is less than 8, the bits we are trying to access
       // might be inside, or left of the srcchunk bit array
       // also note the order of the image for bit depths less than 8 is reversed
@@ -322,7 +323,7 @@ bool Image::rotateAlgorithm2()
         srcchunk = srcchunk >> ((8 - mbitCount) - (src % 8));
     
       // create a mask that will turn all the unwanted bits to zeros
-      uint mask = ~(-1 << mbitCount);
+      uint32_t mask = ~(-1 << mbitCount);
       srcchunk = srcchunk & mask;
 
       // calculate where the source pixel goes
@@ -333,11 +334,11 @@ bool Image::rotateAlgorithm2()
       if (mbitCount < 8)
         srcchunk = srcchunk << ((8 - mbitCount) - (dest % 8));
       // we need to read a chunk from the destination array in case
-      // the bit depth isn't the sizeof(uint)
-      uint destchunk = *reinterpret_cast<uint*>(&pNewBitmap[dest/8]);
+      // the bit depth isn't the sizeof(uint32_t)
+      uint32_t destchunk = *reinterpret_cast<uint32_t*>(&pNewBitmap[dest/8]);
       // modify the right bits only, leave alone the rest
       destchunk = destchunk | srcchunk;
-      *reinterpret_cast<uint*>(&pNewBitmap[dest/8]) = destchunk;
+      *reinterpret_cast<uint32_t*>(&pNewBitmap[dest/8]) = destchunk;
     }
   }
  
@@ -427,7 +428,7 @@ bool Image::writeBmp(char *fileName)
   return true;
 }
 
-void RGBALineToRGB(BYTE *pRGBA, int RGBALineSize, BYTE *pRGB, int RGBLineSize, BYTE RGBBackground[3])
+void RGBALineToRGB(BYTE *pRGBA, int64_t RGBALineSize, BYTE *pRGB, int64_t RGBLineSize, BYTE RGBBackground[3])
 {
   //int foreground[4];  /* image pixel: R, G, B, A */
   //int background[3];  /* background pixel: R, G, B */
@@ -435,8 +436,8 @@ void RGBALineToRGB(BYTE *pRGBA, int RGBALineSize, BYTE *pRGB, int RGBLineSize, B
   //int 255;   /* foreground max sample */
   //int 255;   /* background max sample */
   //int 255;   /* frame buffer max sample */
-  int src, dest;
-  int ialpha;
+  int64_t src, dest;
+  int64_t ialpha;
   float alpha, compalpha;
   float gamfg, gambg, comppix;
    
@@ -523,13 +524,13 @@ bool Image::rotate24bitCW()
     return false;
   }
  
-  uint newWidth = mactualHeight;
-  uint newHeight = mactualWidth;
+  uint64_t newWidth = mactualHeight;
+  uint64_t newHeight = mactualWidth;
 
-  uint srcPaddedScanlineBytes = mactualWidth * 3;
+  uint64_t srcPaddedScanlineBytes = mactualWidth * 3;
   while ((srcPaddedScanlineBytes & 3) != 0) srcPaddedScanlineBytes++;
-  uint destUnpaddedScanlineBytes = newWidth * 3;
-  uint destPaddedScanlineBytes = destUnpaddedScanlineBytes;
+  uint64_t destUnpaddedScanlineBytes = newWidth * 3;
+  uint64_t destPaddedScanlineBytes = destUnpaddedScanlineBytes;
   while ((destPaddedScanlineBytes & 3) != 0) destPaddedScanlineBytes++;
   mbitmapSize = destPaddedScanlineBytes * newHeight;
 
@@ -541,8 +542,8 @@ bool Image::rotate24bitCW()
   }
   memset(pNewBitmap, 0, mbitmapSize);
 
-  uint src, dest;
-  uint x, y;
+  uint64_t src, dest;
+  uint64_t x, y;
 
   for (y = 0; y < mactualHeight; y++) 
   {
@@ -580,13 +581,13 @@ bool Image::rotate24bitCCW()
     return false;
   }
  
-  uint newWidth = mactualHeight;
-  uint newHeight = mactualWidth;
+  uint64_t newWidth = mactualHeight;
+  uint64_t newHeight = mactualWidth;
   
-  uint srcPaddedScanlineBytes = mactualWidth * 3;
+  uint64_t srcPaddedScanlineBytes = mactualWidth * 3;
   while ((srcPaddedScanlineBytes & 3) != 0) srcPaddedScanlineBytes++;
-  uint destUnpaddedScanlineBytes = newWidth * 3;
-  uint destPaddedScanlineBytes = destUnpaddedScanlineBytes;
+  uint64_t destUnpaddedScanlineBytes = newWidth * 3;
+  uint64_t destPaddedScanlineBytes = destUnpaddedScanlineBytes;
   while ((destPaddedScanlineBytes & 3) != 0) destPaddedScanlineBytes++;
   mbitmapSize = destPaddedScanlineBytes * newHeight;
 
@@ -598,8 +599,8 @@ bool Image::rotate24bitCCW()
   }
   memset(pNewBitmap, 0, mbitmapSize);
 
-  uint src, dest;
-  uint x, y;
+  uint64_t src, dest;
+  uint64_t x, y;
 
   for (y = 0; y < mactualHeight; y++) 
   {
@@ -631,9 +632,9 @@ bool Image::rotate24bitCCW()
 
 void Image::alignBytes()
 {
-  uint unpaddedWidth = mreadWidth * 3;
-  uint paddedWidth = unpaddedWidth;
-  uint diff=0;
+  uint64_t unpaddedWidth = mreadWidth * 3;
+  uint64_t paddedWidth = unpaddedWidth;
+  uint64_t diff=0;
   BYTE* pOldBitmap=mpBitmap;
   if (mpBitmap != 0)
   {
@@ -642,7 +643,7 @@ void Image::alignBytes()
     if (diff > 0)
     {
       BYTE* pBitmap2 = new BYTE[paddedWidth * mreadHeight];
-      for (int row=0; row<mreadHeight; row++)
+      for (int64_t row=0; row<mreadHeight; row++)
       {
           memcpy(&pBitmap2[row*paddedWidth], &mpBitmap[row*unpaddedWidth], unpaddedWidth);
           memset(&pBitmap2[(row+1)*paddedWidth-diff], 0, diff);

@@ -372,7 +372,7 @@ bool Jpg::unbufferedRead(unsigned int x, unsigned int y, unsigned int width, uns
         std::vector<JSAMPLE> jSamples(cinfo.output_width);
         JSAMPROW pjSampleRow = &jSamples[0];
         JSAMPARRAY pjSampleArray = &pjSampleRow;
-        int yDest = 0;
+        unsigned int yDest = 0;
         while (cinfo.output_scanline < cinfo.output_height) 
         {
             /* jpeg_read_scanlines expects an array of pointers to scanlines.

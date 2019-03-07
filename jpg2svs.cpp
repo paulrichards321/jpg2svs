@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cmath>
 #include <ctime>
 #include <cstdlib>
+#include <cstdint>
 #include <cctype>
 #if defined(_WIN32) || defined(_WIN64)
 #include "console-mswin.h"
@@ -40,7 +41,7 @@ protected:
   Tiff *tif;
   std::ofstream *logFile;
   std::string errMsg;
-  int mBaseTotalWidth, mBaseTotalHeight;
+  int64_t mBaseTotalWidth, mBaseTotalHeight;
   bool mValidObject;
   bool mBlendTopLevel, mBlendByRegion;
   bool mIncludeZStack;
@@ -52,7 +53,7 @@ public:
   ~SlideConvertor() { closeRelated(); }
   void closeRelated();
   std::string getErrMsg() { return errMsg; }
-  int open(std::string inputFile, std::string outputFile, bool blendTopLevel, bool blendByRegion, bool markOutline, bool includeZStack, int quality, int bestXOffset = -1, int bestYOffset = -1);
+  int open(std::string inputFile, std::string outputFile, bool blendTopLevel, bool blendByRegion, bool markOutline, bool includeZStack, int quality, int64_t bestXOffset = -1, int64_t bestYOffset = -1);
   int convert();
   int outputLevel(int level, bool tiled, int direction, int zLevel, int magnification);
 };
@@ -77,30 +78,42 @@ SlideConvertor::SlideConvertor()
 
 int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel, int magnification)
 {
-  int srcTotalWidth=0;
-  int srcTotalHeight=0;
-  int srcTotalWidthL2=1;
-  int srcTotalHeightL2=1;
-  int destTotalWidth=0;
-  int destTotalHeight=0;
-  int tileWidth=256;
-  int tileHeight=256;
+  int64_t srcTotalWidth=0;
+  int64_t srcTotalHeight=0;
+  int64_t srcTotalWidthL2=1;
+  int64_t srcTotalHeightL2=1;
+  int64_t destTotalWidth=0;
+  int64_t destTotalHeight=0;
+  const int bkgdLimit=32;
+  int outputWidth=256;
+  int outputHeight=256;
+  int inputTileWidth=256+bkgdLimit;
+  int inputTileHeight=256+bkgdLimit;
   double xScale=0.0, yScale=0.0;
   double xScaleL2=0.0, yScaleL2=0.0;
   double xScaleReverse=0.0, yScaleReverse=0.0;
   double xScaleResize=0.0, yScaleResize=0.0;
-  int grabWidth=0, grabHeight=0;
-  int grabWidthL2=0, grabHeightL2=0;
+  int64_t grabWidthA=0, grabWidthB=0;
+  int64_t grabHeightA=0, grabHeightB=0;
+  int64_t grabWidthL2=0, grabHeightL2=0;
   BYTE* pSizedBitmap = 0;
+  BYTE* pBitmap4 = NULL;
   std::ostringstream output;
   int readZLevel = 0;
   int readDirection = 0;
   unsigned char bkgColor=255;
   bool fillin = ((level < 2 && slide->checkLevel(2)) ? true : false);
-  int finalScaleWidth=256, finalScaleHeight=256;
   int scaleMethod=cv::INTER_CUBIC;
   int scaleMethodL2=cv::INTER_CUBIC;
+  int64_t totalXSections=0, totalYSections=0;
+  int16_t *xSubSections=NULL;
+  int16_t *ySubSections=NULL;
 
+  if (mBlendByRegion)
+  {
+    inputTileWidth=256;
+    inputTileHeight=256;
+  }
   if (level==0) 
   {
     readZLevel = zLevel;
@@ -131,29 +144,33 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   }
   if (tiled==false)
   {
-    tileWidth=0;
-    tileHeight=0;
+    inputTileWidth=0;
+    inputTileHeight=0;
     double magnifyX=magnification;
     double magnifyY=magnification;
     double destTotalWidthDec = mBaseTotalWidth / magnifyX;
     double destTotalHeightDec = mBaseTotalHeight / magnifyY;
-    destTotalWidth = (int) destTotalWidthDec;
-    destTotalHeight = (int) destTotalHeightDec;
+    destTotalWidth = (int64_t) destTotalWidthDec;
+    destTotalHeight = (int64_t) destTotalHeightDec;
     xScale=(double) srcTotalWidth / (double) destTotalWidth;
     yScale=(double) srcTotalHeight / (double) destTotalHeight;
     xScaleReverse=(double) destTotalWidth / (double) srcTotalWidth;
     yScaleReverse=(double) destTotalHeight / (double) srcTotalHeight;
-    grabWidth=(int) srcTotalWidth;
-    grabHeight=(int) srcTotalHeight;
+    grabWidthA=(int64_t) srcTotalWidth;
+    grabHeightA=(int64_t) srcTotalHeight;
+    grabWidthB=(int64_t) srcTotalWidth;
+    grabHeightB=(int64_t) srcTotalHeight;
 
     xScaleL2=(double) srcTotalWidthL2 / (double) srcTotalWidth;
     yScaleL2=(double) srcTotalHeightL2 / (double) srcTotalHeight;
  
-    grabWidthL2=(int) srcTotalWidthL2;
-    grabHeightL2=(int) srcTotalHeightL2;
+    grabWidthL2=(int64_t) srcTotalWidthL2;
+    grabHeightL2=(int64_t) srcTotalHeightL2;
 
-    finalScaleWidth=destTotalWidth;
-    finalScaleHeight=destTotalHeight;
+    inputTileWidth=destTotalWidth;
+    inputTileHeight=destTotalHeight;
+    outputWidth=destTotalWidth;
+    outputHeight=destTotalHeight;
   } 
   else if (magnification==1 || slide->isPreviewSlide(level))
   {
@@ -163,13 +180,15 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
     yScale=1.0;
     xScaleReverse=1.0;
     yScaleReverse=1.0;
-    grabWidth=256;
-    grabHeight=256;
+    grabWidthA=inputTileWidth;
+    grabHeightA=inputTileHeight;
+    grabWidthB=inputTileWidth;
+    grabHeightB=inputTileHeight;
 
     xScaleL2=(double) srcTotalWidthL2 / (double) destTotalWidth;
     yScaleL2=(double) srcTotalHeightL2 / (double) destTotalHeight;
-    grabWidthL2=(int)ceil(256.0 * xScaleL2);
-    grabHeightL2=(int)ceil(256.0 * yScaleL2);
+    grabWidthL2=(int64_t)ceil((double) inputTileWidth * xScaleL2);
+    grabHeightL2=(int64_t)ceil((double) inputTileHeight * yScaleL2);
   }
   else
   {
@@ -177,26 +196,47 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
     double magnifyY=magnification;
     double destTotalWidthDec = mBaseTotalWidth / magnifyX;
     double destTotalHeightDec = mBaseTotalHeight / magnifyY;
-    destTotalWidth = (int) destTotalWidthDec;
-    destTotalHeight = (int) destTotalHeightDec;
+    destTotalWidth = (int64_t) destTotalWidthDec;
+    destTotalHeight = (int64_t) destTotalHeightDec;
     xScale=(double) srcTotalWidth / (double) destTotalWidth;
     yScale=(double) srcTotalHeight / (double) destTotalHeight;
     xScaleReverse=(double) destTotalWidth / (double) srcTotalWidth;
     yScaleReverse=(double) destTotalHeight / (double) srcTotalHeight;
-    grabWidth=(int)ceil(256.0 * xScale);
-    grabHeight=(int)ceil(256.0 * yScale);
+    grabWidthA=(int64_t)ceil((double) inputTileWidth * xScale);
+    grabHeightA=(int64_t)ceil((double) inputTileHeight * yScale);
+    grabWidthB=(int64_t)ceil((double) outputWidth * xScale);
+    grabHeightB=(int64_t)ceil((double) outputHeight * yScale);
 
     xScaleL2=(double) srcTotalWidthL2 / (double) srcTotalWidth;
     yScaleL2=(double) srcTotalHeightL2 / (double) srcTotalHeight;
  
-    grabWidthL2=(int)ceil(256.0 * (double) srcTotalWidthL2 / (double) destTotalWidth);
-    grabHeightL2=(int)ceil(256.0 * (double) srcTotalHeightL2 / (double) destTotalHeight);
+    grabWidthL2=(int64_t)ceil((double) inputTileWidth * (double) srcTotalWidthL2 / (double) destTotalWidth);
+    grabHeightL2=(int64_t)ceil((double) inputTileHeight * (double) srcTotalHeightL2 / (double) destTotalHeight);
   }
   if (xScaleReverse < 1.0 || yScaleReverse < 1.0)
   {
     scaleMethod=cv::INTER_AREA;
   }
-
+  if (mBlendByRegion==false)
+  {
+    pBitmap4 = new BYTE[outputWidth * outputHeight * 3];
+    if (pBitmap4 == NULL)
+    {
+      output << "Out of memory allocating final tile bitmap. Cannot finish scaling!" << std::endl;
+      return 1;
+    }
+    totalXSections = (int64_t) ceil((double) outputHeight / (double) bkgdLimit)+1;
+    totalYSections = (int64_t) ceil((double) destTotalWidth / (double) bkgdLimit)+1;
+    xSubSections=new int16_t[totalXSections];
+    ySubSections=new int16_t[totalYSections];
+    if (xSubSections == NULL || ySubSections == NULL)
+    {
+      output << "Out of memory tile subsections. Cannot finish scaling!" << std::endl;
+      return 1;
+    } 
+    memset(xSubSections, 0, totalXSections * sizeof(int16_t));
+    memset(ySubSections, 0, totalYSections * sizeof(int16_t));
+  }
   *logFile << " xScale=" << xScale << " yScale=" << yScale;
   *logFile << " srcTotalWidth=" << srcTotalWidth << " srcTotalHeight=" << srcTotalHeight;
   *logFile << " destTotalWidth=" << destTotalWidth << " destTotalHeight=" << destTotalHeight;
@@ -223,26 +263,26 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
     oss << "|OffsetZ = " << (mZSteps-1) << "\0";
   }
   std::string strAttributes=oss.str();
-  if (tif->setAttributes(3, 8, destTotalWidth, destTotalHeight, tileWidth, tileHeight, 1, quality)==false || tif->setDescription(strAttributes, mBaseTotalWidth, mBaseTotalHeight)==false)
+  if (tif->setAttributes(3, 8, destTotalWidth, destTotalHeight, outputWidth, outputHeight, 1, quality)==false || tif->setDescription(strAttributes, mBaseTotalWidth, mBaseTotalHeight)==false)
   {
     std::string errMsg;
     tif->getErrMsg(errMsg);
     std::cerr << "Failed to write tif attributes: " << errMsg << std::endl; 
     return 4;
   }
-  int yDest=0, xDest=0;
+  int64_t yDest=0, xDest=0;
   int perc=0, percOld=0;
   bool onePercHit=false;
   time_t timeStart=0, timeLast=0;
   bool error=false;
   timeStart = time(NULL);
-  int ySrc=0;
+  int64_t ySrc=0;
   retractCursor();
   std::cout << "0% done...    " << std::flush;
 
   BYTE *pBitmapL2 = NULL;
 
-  int L2Size=srcTotalWidthL2 * srcTotalHeightL2 * 3;
+  int64_t L2Size=srcTotalWidthL2 * srcTotalHeightL2 * 3;
   if (fillin)
   {
     pBitmapL2 = new BYTE[L2Size];
@@ -251,8 +291,8 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
       *logFile << "Failed to allocate memory for full pyramid level 2. Out of memory?" << std::endl;
     }
   }
-  int readWidthL2=0;
-  int readHeightL2=0;
+  int64_t readWidthL2=0;
+  int64_t readHeightL2=0;
   bool readOkL2=false;
   if (pBitmapL2)
   {
@@ -274,64 +314,68 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   while (ySrc<srcTotalHeight && yDest<destTotalHeight && error==false)
   {
     xDest = 0;
-    for (int xSrc=0; xSrc<srcTotalWidth && xDest<destTotalWidth && error==false; xSrc += grabWidth) 
+    for (int64_t xSrc=0; xSrc<srcTotalWidth && xDest<destTotalWidth && error==false; xSrc += grabWidthB) 
     {
       bool toSmall = false;
-      BYTE *pBitmap1 = slide->allocate(level, xSrc, ySrc, grabWidth, grabHeight, false);
+      BYTE *pBitmap1 = slide->allocate(level, xSrc, ySrc, grabWidthA, grabHeightA, false);
       BYTE *pBitmap2 = pBitmap1;
-      int readWidth=0, readHeight=0;
+      int64_t readWidth=0, readHeight=0;
       bool readOk=false;
       if (pBitmap1)
       {
-        *logFile << " slide->read(x=" << xSrc << " y=" << ySrc << " grabWidth=" << grabWidth << " grabHeight=" << grabHeight << " level=" << level << "); " << std::endl;
-        readOk=slide->read(pBitmap2, level, readDirection, readZLevel, xSrc, ySrc, grabWidth, grabHeight, false, &readWidth, &readHeight);
+        *logFile << " slide->read(x=" << xSrc << " y=" << ySrc << " grabWidthA=" << grabWidthA << " grabHeightA=" << grabHeightA << " level=" << level << "); " << std::endl;
+        readOk=slide->read(pBitmap2, level, readDirection, readZLevel, xSrc, ySrc, grabWidthA, grabHeightA, false, &readWidth, &readHeight);
       }
       if (readOk)
       {
         cv::Mat imgScaled;
         cv::Mat imgScaled2;
         BYTE *pBitmap3 = NULL;
-        if (readWidth != grabWidth || readHeight != grabHeight)
+        BYTE *pBitmapFinal = pBitmap2;
+        if (readWidth != grabWidthA || readHeight != grabHeightA)
         {
         //    *logFile << "Tile shorter: width=" << readWidth << " height=" << readHeight << std::endl;
           toSmall = true;
-          pSizedBitmap = new BYTE[grabWidth*grabHeight*3];
-          memset(pSizedBitmap, bkgColor, grabHeight*grabWidth*3);
-          for (int row=0; row < readHeight; row++)
+          pSizedBitmap = new BYTE[grabWidthA*grabHeightA*3];
+          memset(pSizedBitmap, bkgColor, grabHeightA*grabWidthA*3);
+          for (int64_t row=0; row < readHeight; row++)
           {
-            memcpy(&pSizedBitmap[row*grabWidth*3], &pBitmap2[row*readWidth*3], readWidth*3);
+            memcpy(&pSizedBitmap[row*grabWidthA*3], &pBitmap2[row*readWidth*3], readWidth*3);
           }
           pBitmap2 = pSizedBitmap;
+          pBitmapFinal = pSizedBitmap;
         }
         if (tiled==false)
         {
-          cv::Mat imgSrc(grabHeight, grabWidth, CV_8UC3, pBitmap2);
+          cv::Mat imgSrc(grabHeightA, grabWidthA, CV_8UC3, pBitmap2);
           cv::Size scaledSize(destTotalWidth, destTotalHeight);
           cv::resize(imgSrc, imgScaled, scaledSize, xScaleReverse, yScaleReverse, scaleMethod);
           imgSrc.release();
           pBitmap2 = imgScaled.data;  
+          pBitmapFinal = imgScaled.data;
         } 
-        else if (grabWidth!=256 || grabHeight!=256)
+        else if (grabWidthA!=inputTileWidth || grabHeightA!=inputTileHeight)
         {
-          cv::Mat imgSrc(grabHeight, grabWidth, CV_8UC3, pBitmap2);
-          cv::Size scaledSize(256, 256);
+          cv::Mat imgSrc(grabHeightA, grabWidthA, CV_8UC3, pBitmap2);
+          cv::Size scaledSize(inputTileWidth, inputTileHeight);
           cv::resize(imgSrc, imgScaled, scaledSize, xScaleReverse, yScaleReverse, scaleMethod);
           imgSrc.release();
           pBitmap2 = imgScaled.data;  
+          pBitmapFinal = imgScaled.data;
         }
         if (readOkL2)
         {
-          int xSrcStartL2=round((double) xSrc * xScaleL2);
-          int ySrcStartL2=round((double) ySrc * yScaleL2);
-          int xSrcEndL2=xSrcStartL2 + grabWidthL2;
-          int ySrcEndL2=ySrcStartL2 + grabHeightL2;
+          int64_t xSrcStartL2=round((double) xSrc * xScaleL2);
+          int64_t ySrcStartL2=round((double) ySrc * yScaleL2);
+          int64_t xSrcEndL2=xSrcStartL2 + grabWidthL2;
+          int64_t ySrcEndL2=ySrcStartL2 + grabHeightL2;
           if (xSrcEndL2 > readWidthL2) xSrcEndL2=readWidthL2;
           if (ySrcEndL2 > readHeightL2) ySrcEndL2=readHeightL2;
-          int grabWidth2=xSrcEndL2 - xSrcStartL2;
-          int grabHeight2=ySrcEndL2 - ySrcStartL2;
-          int rowSize = grabWidthL2 * 3;
-          int copySize = grabWidth2 * 3;
-          int tileSize = rowSize * grabHeightL2;
+          int64_t grabWidth2=xSrcEndL2 - xSrcStartL2;
+          int64_t grabHeight2=ySrcEndL2 - ySrcStartL2;
+          int64_t rowSize = grabWidthL2 * 3;
+          int64_t copySize = grabWidth2 * 3;
+          int64_t tileSize = rowSize * grabHeightL2;
           if (magnification==32 && level==1)
           {
             *logFile << " xSrc=" << xSrc << " xSrcStartL2=" << xSrcStartL2 << " ySrc=" << ySrc << " ySrcStartL2=" << ySrcStartL2 << " grabWidthL2=" << grabWidthL2 << " grabHeightL2=" << grabHeightL2 << std::endl;
@@ -340,35 +384,36 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
           {
             pBitmap3 = new BYTE[tileSize];
             memset(pBitmap3, bkgColor, tileSize);
-            for (int row=0; row < grabHeight2; row++)
+            for (int64_t row=0; row < grabHeight2; row++)
             {
-              int offset3 = row*rowSize;
-              int offset4 = ((ySrcStartL2+row)*readWidthL2*3)+(xSrcStartL2*3);
+              int64_t offset3 = row*rowSize;
+              int64_t offset4 = ((ySrcStartL2+row)*readWidthL2*3)+(xSrcStartL2*3);
               if (offset3 + copySize <= tileSize && offset4 + copySize <= L2Size)
               {
                 memcpy(&pBitmap3[offset3], &pBitmapL2[offset4], copySize);
               }
             }
             cv::Mat imgSrc(grabHeightL2, grabWidthL2, CV_8UC3, pBitmap3);
-            cv::Size scaledSize(finalScaleWidth, finalScaleHeight);
+            cv::Size scaledSize(outputWidth, outputHeight);
             cv::resize(imgSrc, imgScaled2, scaledSize, xScaleResize, yScaleResize, scaleMethodL2);
             imgSrc.release();
             if (mBlendByRegion)
             {
-              slide->blendLevelsByRegion(imgScaled2.data, pBitmap2, xSrc, ySrc, grabWidth, grabHeight, finalScaleWidth, finalScaleHeight, xScaleReverse, yScaleReverse, level); 
-              pBitmap2=imgScaled2.data;
+              slide->blendLevelsByRegion(imgScaled2.data, pBitmap2, xSrc, ySrc, grabWidthA, grabHeightA, inputTileWidth, inputTileHeight, xScaleReverse, yScaleReverse, level); 
+              pBitmapFinal=imgScaled2.data;
             }
             else
             {
-              blendLevelsByBkgd(pBitmap2, imgScaled2.data, finalScaleWidth, finalScaleHeight, 32, 245);
+              blendLevelsByBkgd(pBitmap4, pBitmap2, imgScaled2.data, xDest, yDest, inputTileWidth, inputTileHeight, bkgdLimit, xSubSections, totalXSections, ySubSections, totalYSections, 245);
+              pBitmapFinal = pBitmap4;
             }
           } 
         } 
         bool writeOk=false;
         if (tiled)
-          writeOk=tif->writeEncodedTile(pBitmap2, xDest, yDest, 1);
+          writeOk=tif->writeEncodedTile(pBitmapFinal, xDest, yDest, 1);
         else
-          writeOk=tif->writeImage(pBitmap2);
+          writeOk=tif->writeImage(pBitmapFinal);
         imgScaled.release();
         if (readOkL2)
         {
@@ -399,16 +444,10 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
       {
         delete[] pBitmap1;
       }
-      if (tiled) 
-        xDest += tileWidth;
-      else
-        xDest = destTotalWidth;
+      xDest += outputWidth;
     }
-    if (tiled)
-      yDest += tileHeight;
-    else
-      yDest = destTotalHeight;
-    ySrc += grabHeight;
+    yDest += outputHeight;
+    ySrc += grabHeightB;
     perc=(int)(((double) ySrc / (double) srcTotalHeight) * 100);
     if (perc>100)
     {
@@ -446,6 +485,12 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
     delete[] pBitmapL2;
     pBitmapL2 = NULL;
   }
+  if (pBitmap4)
+  {
+    delete[] pBitmap4;
+    pBitmap4 = NULL;
+  }
+
   timeLast = time(NULL);
   if (error==false)
   {
@@ -645,7 +690,7 @@ int SlideConvertor::convert()
 }
 
 
-int SlideConvertor::open(std::string inputFile, std::string outputFile, bool blendTopLevel, bool blendByRegion, bool markOutline, bool includeZStack, int quality, int bestXOffset, int bestYOffset)
+int SlideConvertor::open(std::string inputFile, std::string outputFile, bool blendTopLevel, bool blendByRegion, bool markOutline, bool includeZStack, int quality, int64_t bestXOffset, int64_t bestYOffset)
 {
   closeRelated();
   logFile = new std::ofstream("jpg2svs.log");
@@ -772,7 +817,7 @@ int main(int argc, char** argv)
   SlideConvertor slideConv;
   int error=0;
   std::string infile, outfile;
-  int bestXOffset = -1, bestYOffset = -1;
+  int64_t bestXOffset = -1, bestYOffset = -1;
   bool blendTopLevel = true;
   bool blendByRegion = false;
   bool doBorderHighlight = true;
