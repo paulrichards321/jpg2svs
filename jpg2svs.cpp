@@ -144,8 +144,6 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   }
   if (tiled==false)
   {
-    inputTileWidth=0;
-    inputTileHeight=0;
     double magnifyX=magnification;
     double magnifyY=magnification;
     double destTotalWidthDec = mBaseTotalWidth / magnifyX;
@@ -182,8 +180,8 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
     yScaleReverse=1.0;
     grabWidthA=inputTileWidth;
     grabHeightA=inputTileHeight;
-    grabWidthB=inputTileWidth;
-    grabHeightB=inputTileHeight;
+    grabWidthB=outputWidth;
+    grabHeightB=outputHeight;
 
     xScaleL2=(double) srcTotalWidthL2 / (double) destTotalWidth;
     yScaleL2=(double) srcTotalHeightL2 / (double) destTotalHeight;
@@ -289,6 +287,7 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
     if (pBitmapL2==NULL)
     {
       *logFile << "Failed to allocate memory for full pyramid level 2. Out of memory?" << std::endl;
+      return 1;
     }
   }
   int64_t readWidthL2=0;
@@ -404,7 +403,7 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
             }
             else
             {
-              blendLevelsByBkgd(pBitmap4, pBitmap2, imgScaled2.data, xDest, yDest, inputTileWidth, inputTileHeight, bkgdLimit, xSubSections, totalXSections, ySubSections, totalYSections, 245);
+              blendLevelsByBkgd(pBitmap4, pBitmap2, imgScaled2.data, xDest, yDest, inputTileWidth, inputTileHeight, bkgdLimit, xSubSections, totalXSections, ySubSections, totalYSections, 245, tiled);
               pBitmapFinal = pBitmap4;
             }
           } 

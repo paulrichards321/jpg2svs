@@ -1630,12 +1630,15 @@ void CompositeSlide::blendLevelsByRegion(BYTE *pDest, BYTE *pSrc, int64_t x, int
 }
 
 
-void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t y, int tileWidth, int tileHeight, int16_t limit, int16_t *xSubSections, int64_t totalXSections, int16_t *ySubSections, int64_t totalYSections, BYTE bkgdColor)
+void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t y, int tileWidth, int tileHeight, int16_t limit, int16_t *xSubSections, int64_t totalXSections, int16_t *ySubSections, int64_t totalYSections, BYTE bkgdColor, bool tiled)
 {
-  int destTileWidth=tileWidth - limit;
-  int destTileHeight=tileHeight - limit;
+  int destTileWidth=tileWidth;
+  if (tiled) destTileWidth -= limit;
+  int destTileHeight=tileHeight;
+  if (tiled) destTileHeight -= limit;
   int destRowSize=destTileWidth * 3;
   int srcRowSize=tileWidth * 3;
+  BYTE *pSrcEnd = &pSrcL2[destTileHeight * destTileWidth * 3];
   for (int y2=0; y2 < tileHeight; y2 += limit)
   {
     int xSubSection = y2 / limit;
@@ -1671,7 +1674,7 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
         register int y3 = 0;
         while (y3 < yLimit)
         {
-          if (*pDest3 < bkgdColor || pDest3[1] < bkgdColor || pDest3[2] < bkgdColor)
+          if (*pSrc3 < bkgdColor || pSrc3[1] < bkgdColor || pSrc3[2] < bkgdColor)
           {
             if (x3 < xMin)
             {
@@ -1714,11 +1717,8 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
         register int offset = (y2 * destRowSize) + ((x2-xMatches) * 3);
         register BYTE *pDest3 = &pDest[offset];
         register BYTE *pSrc3 = &pSrcL2[offset];
-        register BYTE *pSrcColEnd=pSrc3 + (yLimit * destRowSize);
-        register BYTE *pSrcEnd = &pSrcL2[destTileHeight * destTileWidth * 3];
-        //register int copySize = (xMatches+xLimit) * 3;
         register int copySize;
-        if (x2-xMatches+xLimit > destTileWidth)
+        if ((x2-xMatches)+xLimit > destTileWidth)
         {
           copySize = (destTileWidth-(x2-xMatches)) * 3;
         }
@@ -1726,7 +1726,14 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
         {
           copySize = (xMatches+xLimit) * 3;
         }
-        while (pSrc3+copySize < pSrcColEnd && pSrc3+copySize < pSrcEnd)
+        register BYTE *pSrcColEnd=&pSrc3[(yLimit * destRowSize) + copySize];
+        //register int copySize = (xMatches+xLimit) * 3;
+        if (pSrcColEnd > pSrcEnd)
+        {
+          std::cout << "=";
+          pSrcColEnd = pSrcEnd;
+        }
+        while (pSrc3+copySize < pSrcColEnd)
         {
           memcpy(pDest3, pSrc3, copySize);
           pSrc3 += destRowSize;
@@ -1758,7 +1765,7 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
         register BYTE *pSrcEnd=&pSrcL2[destTileHeight * destTileWidth * 3];
         while (pSrc3+copySize < pSrcColEnd && pSrc3+copySize < pSrcEnd)
         {
-          memcpy(pDest3, pSrc3, copySize);
+          //memcpy(pDest3, pSrc3, copySize);
           pSrc3 += destRowSize;
           pDest3 += destRowSize;
         }
