@@ -84,7 +84,7 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   int64_t srcTotalHeightL2=1;
   int64_t destTotalWidth=0;
   int64_t destTotalHeight=0;
-  const int bkgdLimit=32;
+  const int bkgdLimit=16;
   int outputWidth=256;
   int outputHeight=256;
   int inputTileWidth=256+bkgdLimit;
@@ -185,8 +185,8 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
 
     xScaleL2=(double) srcTotalWidthL2 / (double) destTotalWidth;
     yScaleL2=(double) srcTotalHeightL2 / (double) destTotalHeight;
-    grabWidthL2=(int64_t)ceil((double) inputTileWidth * xScaleL2);
-    grabHeightL2=(int64_t)ceil((double) inputTileHeight * yScaleL2);
+    grabWidthL2=(int64_t)ceil((double) 256.0 * xScaleL2);
+    grabHeightL2=(int64_t)ceil((double) 256.0 * yScaleL2);
   }
   else
   {
@@ -208,8 +208,8 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
     xScaleL2=(double) srcTotalWidthL2 / (double) srcTotalWidth;
     yScaleL2=(double) srcTotalHeightL2 / (double) srcTotalHeight;
  
-    grabWidthL2=(int64_t)ceil((double) inputTileWidth * (double) srcTotalWidthL2 / (double) destTotalWidth);
-    grabHeightL2=(int64_t)ceil((double) inputTileHeight * (double) srcTotalHeightL2 / (double) destTotalHeight);
+    grabWidthL2=(int64_t)ceil((double) 256.0 * (double) srcTotalWidthL2 / (double) destTotalWidth);
+    grabHeightL2=(int64_t)ceil((double) 256.0 * (double) srcTotalHeightL2 / (double) destTotalHeight);
   }
   if (xScaleReverse < 1.0 || yScaleReverse < 1.0)
   {

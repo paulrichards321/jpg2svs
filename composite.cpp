@@ -1649,9 +1649,9 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
     }
     int yLimit = limit;
     if (y2 + limit > tileHeight) yLimit = tileHeight - y2;
-    register BYTE *pSrc2 = &pSrc[y2 * srcRowSize];
-    register BYTE *pDest2 = &pDest[y2 * destRowSize];
-    register int x2 = 0;
+    BYTE *pSrc2 = &pSrc[y2 * srcRowSize];
+    BYTE *pDest2 = &pDest[y2 * destRowSize];
+    int x2 = 0;
     while (x2 < tileWidth)
     {
       int64_t ySubSection = (x+x2) / limit;
@@ -1666,12 +1666,12 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
       int xMax = -1;
       int yMin = yLimit;
       int yMax = -1;
-      register int x3=0;
+      int x3=0;
       while (x3 < xLimit)
       {
-        register BYTE *pDest3 = pDest2;
-        register BYTE *pSrc3 = pSrc2;
-        register int y3 = 0;
+        BYTE *pDest3 = pDest2;
+        BYTE *pSrc3 = pSrc2;
+        int y3 = 0;
         while (y3 < yLimit)
         {
           if (*pSrc3 < bkgdColor || pSrc3[1] < bkgdColor || pSrc3[2] < bkgdColor)
@@ -1714,11 +1714,11 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
         {
           xMatches = x2;
         }
-        register int offset = (y2 * destRowSize) + ((x2-xMatches) * 3);
-        register BYTE *pDest3 = &pDest[offset];
-        register BYTE *pSrc3 = &pSrcL2[offset];
-        register int copySize;
-        if ((x2-xMatches)+xLimit > destTileWidth)
+        int offset = (y2 * destRowSize) + ((x2-xMatches) * 3);
+        BYTE *pDest3 = &pDest[offset];
+        BYTE *pSrc3 = &pSrcL2[offset];
+        int copySize;
+        if (x2+xLimit > destTileWidth)
         {
           copySize = (destTileWidth-(x2-xMatches)) * 3;
         }
@@ -1726,14 +1726,8 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
         {
           copySize = (xMatches+xLimit) * 3;
         }
-        register BYTE *pSrcColEnd=&pSrc3[(yLimit * destRowSize) + copySize];
-        //register int copySize = (xMatches+xLimit) * 3;
-        if (pSrcColEnd > pSrcEnd)
-        {
-          std::cout << "=";
-          pSrcColEnd = pSrcEnd;
-        }
-        while (pSrc3+copySize < pSrcColEnd)
+        BYTE *pSrcColEnd=&pSrc3[yLimit * destRowSize];
+        while (pSrc3 < pSrcColEnd)
         {
           memcpy(pDest3, pSrc3, copySize);
           pSrc3 += destRowSize;
@@ -1748,24 +1742,28 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
         {
           yMatches = y2;
         }
-        register int offset = ((y2-yMatches) * destRowSize) + (x2 * 3);
-        register BYTE *pDest3 = &pDest[offset];
-        register int copySize = xLimit * 3;
-        register BYTE *pSrc3 = &pSrcL2[offset];
-        register int colEnd;
-        if (y2-yMatches+yLimit > destTileHeight)
+        int offset = ((y2-yMatches) * destRowSize) + (x2 * 3);
+        BYTE *pDest3 = &pDest[offset];
+        int copySize = xLimit * 3;
+        BYTE *pSrc3 = &pSrcL2[offset];
+        int colEnd;
+        if (y2+yLimit > destTileHeight)
         {
           colEnd=(destTileHeight-(y2-yMatches))*destRowSize;
         }
         else
         {
-          colEnd=(y2-yMatches+yLimit)*destRowSize;
+          colEnd=(yMatches+yLimit)*destRowSize;
         }
-        register BYTE *pSrcColEnd=&pSrc3[colEnd];
-        register BYTE *pSrcEnd=&pSrcL2[destTileHeight * destTileWidth * 3];
-        while (pSrc3+copySize < pSrcColEnd && pSrc3+copySize < pSrcEnd)
+        BYTE *pSrcColEnd=&pSrc3[colEnd];
+        if (pSrcColEnd > pSrcEnd)
         {
-          //memcpy(pDest3, pSrc3, copySize);
+          pSrcColEnd = pSrcEnd;
+        }
+        //BYTE *pSrcEnd=&pSrcL2[destTileHeight * destTileWidth * 3];
+        while (pSrc3 < pSrcColEnd)
+        {
+          memcpy(pDest3, pSrc3, copySize);
           pSrc3 += destRowSize;
           pDest3 += destRowSize;
         }
@@ -1799,15 +1797,15 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
     {
       int yLimit = limit;
       if (y2 + limit > tileHeight) yLimit = tileHeight - y2;
-      register BYTE *pDest2 = &pDest[(y2 * rowSize) + (x2 * 3)];
+      BYTE *pDest2 = &pDest[(y2 * rowSize) + (x2 * 3)];
       int yMin = yLimit;
       int yMax = -1;
-      register BYTE *pDestSubTileEnd = &pDest2[xLimit * 3];
+      BYTE *pDestSubTileEnd = &pDest2[xLimit * 3];
       while (pDest2 < pDestSubTileEnd)
       {
-        register BYTE *pDest3 = pDest2;
-        register BYTE *pDestColEnd = &pDest2[yLimit * rowSize];
-        register int y3=0;
+        BYTE *pDest3 = pDest2;
+        BYTE *pDestColEnd = &pDest2[yLimit * rowSize];
+        int y3=0;
         while (pDest3 < pDestColEnd)
         {
           if (*pDest3 < bkgdColor || pDest3[1] < bkgdColor || pDest3[2] < bkgdColor)
@@ -1833,11 +1831,11 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
         {
           yMatches = y2;
         }
-        register int offset = ((y2-yMatches) * rowSize) + (x2 * 3);
-        register BYTE *pDest3 = &pDest[offset];
-        register int copySize = xLimit * 3;
-        register BYTE *pSrc3 = &pSrc[offset];
-        register BYTE *pSrcColEnd=&pSrc3[(yMatches+yLimit)*rowSize];
+        int offset = ((y2-yMatches) * rowSize) + (x2 * 3);
+        BYTE *pDest3 = &pDest[offset];
+        int copySize = xLimit * 3;
+        BYTE *pSrc3 = &pSrc[offset];
+        BYTE *pSrcColEnd=&pSrc3[(yMatches+yLimit)*rowSize];
         while (pSrc3 < pSrcColEnd)
         {
           memcpy(pDest3, pSrc3, copySize);
