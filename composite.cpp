@@ -1708,7 +1708,8 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
         x3++;
       }
       xMax++;
-      if ((xMax != 0 || x2+xLimit >= tileWidth) && xMatches+xMin >= limit && y2<destTileHeight && x2-xMatches < destTileWidth)
+      if ((xMin != xLimit || x2+xLimit >= tileWidth) && xMatches+xMin >= limit && y2<destTileHeight && x2-xMatches < destTileWidth)
+//      if (xMatches+xMin >= limit && y2<destTileHeight && x2-xMatches < destTileWidth)
       {
         if (x2-xMatches < 0)
         {
@@ -1724,7 +1725,7 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
         }
         else
         {
-          copySize = (xMatches+xLimit) * 3;
+          copySize = (xMatches+xMin) * 3;
         }
         BYTE *pSrcColEnd=&pSrc3[yLimit * destRowSize];
         while (pSrc3 < pSrcColEnd)
@@ -1736,7 +1737,8 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
         xMatches = 0;
       }
       yMax++;
-      if ((yMax != 0 || y2+yLimit>=tileHeight) && yMatches+yMin >= limit && x2<destTileWidth && y2-yMatches < destTileHeight)
+      if ((yMin != yLimit || y2+yLimit>=tileHeight) && yMatches+yMin >= limit && x2<destTileWidth && y2-yMatches < destTileHeight)
+      //if (yMatches+yMin >= limit && x2<destTileWidth && y2-yMatches < destTileHeight)
       {
         if (y2-yMatches < 0)
         {
@@ -1747,18 +1749,25 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
         int copySize = xLimit * 3;
         BYTE *pSrc3 = &pSrcL2[offset];
         int colEnd;
-        if (y2+yLimit > destTileHeight)
+        if (y2+yMin > destTileHeight)
         {
           colEnd=(destTileHeight-(y2-yMatches))*destRowSize;
         }
         else
         {
-          colEnd=(yMatches+yLimit)*destRowSize;
+          colEnd=(yMatches+yMin)*destRowSize;
         }
         BYTE *pSrcColEnd=&pSrc3[colEnd];
         if (pSrcColEnd > pSrcEnd)
         {
           pSrcColEnd = pSrcEnd;
+        }
+        else if (pSrcColEnd < pSrcEnd)
+        {
+          //std::cout << "I:" << (int) pSrcColEnd[0] << " " << (int) pSrcColEnd[1] << " " << (int) pSrcColEnd[2] << " ";
+          pDest3[colEnd] = 0;
+          pDest3[colEnd+1] = 0;
+          pDest3[colEnd+2] = 0;
         }
         //BYTE *pSrcEnd=&pSrcL2[destTileHeight * destTileWidth * 3];
         while (pSrc3 < pSrcColEnd)
