@@ -210,7 +210,8 @@ public:
 
 };
 
-void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t y, int tileWidth, int tileHeight, int16_t limit, int16_t *xSubSections, int64_t totalXSections, int16_t *ySubSections, int64_t totalYSections, BYTE bkgdColor, bool tiled);
+void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t y, int tileWidth, int tileHeight, int limit, bool *freeXMap, int64_t totalXMap, bool *freeYMap, int64_t totalYMap, BYTE bkgdColor, bool tiled);
+
 
 
 class CVMatchCompare 

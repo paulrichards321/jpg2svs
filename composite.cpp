@@ -1630,328 +1630,68 @@ void CompositeSlide::blendLevelsByRegion(BYTE *pDest, BYTE *pSrc, int64_t x, int
 }
 
 
-void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t y, int tileWidth, int tileHeight, int16_t limit, int16_t *xSubSections, int64_t totalXSections, int16_t *ySubSections, int64_t totalYSections, BYTE bkgdColor, bool tiled)
+void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t y, int tileWidth, int tileHeight, int limit, bool *freeXMap, int64_t totalXMap, bool *freeYMap, int64_t totalYMap, BYTE bkgdColor, bool tiled)
 {
   int destTileWidth=tileWidth;
   if (tiled) destTileWidth -= limit;
   int destTileHeight=tileHeight;
   if (tiled) destTileHeight -= limit;
-  int destRowSize=destTileWidth * 3;
-  int srcRowSize=tileWidth * 3;
-  BYTE *pSrcEnd = &pSrcL2[destTileHeight * destTileWidth * 3];
-  for (int y2=0; y2 < tileHeight; y2 += limit)
+  int64_t yEnd = y+destTileHeight;
+  int64_t xEnd = x+destTileWidth;
+  if (destTileWidth <= 0 || tileWidth <= 0 || destTileHeight <= 0 || tileHeight <= 0 || limit < 0 || xEnd > totalXMap || yEnd > totalYMap) return;
+  int srcRowSize = tileWidth * 3;
+  int destRowSize = destTileWidth * 3;
+  register int row = 0;
+  while (y < yEnd)
   {
-    int xSubSection = y2 / limit;
-    int16_t xMatches = 0;
-    if (xSubSection < totalXSections)
+    register int64_t x2 = x;
+    register BYTE *pSrcB = &pSrc[row * srcRowSize];
+    register BYTE *pDestB = &pDest[row * destRowSize];
+    register BYTE *pSrcL2B = &pSrcL2[row * destRowSize];
+    while (x2 < xEnd)
     {
-      xMatches = xSubSections[xSubSection];
+      if (*pSrcB >= bkgdColor && pSrcB[1] >= bkgdColor && pSrcB[2] >= bkgdColor           && (x2==0 || y==0 || freeYMap[y]==true || freeXMap[x2]==true))
+      {
+        *pDestB = *pSrcL2B;
+        pDestB[1] = pSrcL2B[1];
+        pDestB[2] = pSrcL2B[2];
+        freeXMap[x2]=true;
+        freeYMap[y]=true;
+      }
+      else 
+      {
+        *pDestB = *pSrcB;
+        pDestB[1] = pSrcB[1];
+        pDestB[2] = pSrcB[2];
+        freeXMap[x2]=false;
+        freeYMap[y]=false;
+      }
+      pDestB += 3;
+      pSrcB += 3;
+      pSrcL2B += 3;
+      x2++;
     }
-    int yLimit = limit;
-    if (y2 + limit > tileHeight) yLimit = tileHeight - y2;
-    BYTE *pSrc2 = &pSrc[y2 * srcRowSize];
-    BYTE *pDest2 = &pDest[y2 * destRowSize];
-    int x2 = 0;
-    while (x2 < tileWidth)
+    while (x2 > x)
     {
-      int64_t ySubSection = (x+x2) / limit;
-      int16_t yMatches = 0;
-      if (ySubSection < totalYSections)
+      pDestB -= 3;
+      pSrcB -= 3;
+      pSrcL2B -= 3;
+      x2--;
+      if (*pSrcB >= bkgdColor && pSrcB[1] >= bkgdColor && pSrcB[2] >= bkgdColor
+      
+          && (x2+1==xEnd || y==0 || freeYMap[y]==true || freeXMap[x2]==true))
       {
-        yMatches = ySubSections[ySubSection];
+        *pDestB = *pSrcL2B;
+        pDestB[1] = pSrcL2B[1];
+        pDestB[2] = pSrcL2B[2];
+        freeXMap[x2]=true;
+        freeYMap[y]=true;
       }
-      int xLimit = limit;
-      if (x2 + limit > tileWidth) xLimit = tileWidth - x2;
-      int xMin = xLimit;
-      int xMax = -1;
-      int yMin = yLimit;
-      int yMax = -1;
-      int x3=0;
-      while (x3 < xLimit)
-      {
-        BYTE *pDest3 = pDest2;
-        BYTE *pSrc3 = pSrc2;
-        int y3 = 0;
-        while (y3 < yLimit)
-        {
-          if (*pSrc3 < bkgdColor || pSrc3[1] < bkgdColor || pSrc3[2] < bkgdColor)
-          {
-            if (x3 < xMin)
-            {
-              xMin = x3;
-            }
-            if (x3 > xMax)
-            {
-              xMax = x3;
-            }
-            if (y3 < yMin)
-            {
-              yMin = y3;
-            }
-            if (y3 > yMax)
-            {
-              yMax = y3;
-            }
-          }
-          if (x3+x2 < destTileWidth && y3+y2 < destTileHeight)
-          {
-            *pDest3 = *pSrc3;
-            pDest3[1] = pSrc3[1];
-            pDest3[2] = pSrc3[2];
-          }
-          pDest3 += destRowSize;
-          pSrc3 += srcRowSize;
-          y3++;
-        }
-        pDest2 += 3;
-        pSrc2 += 3;
-        x3++;
-      }
-      xMax++;
-      if ((xMin != xLimit || x2+xLimit >= tileWidth) && xMatches+xMin >= limit && y2<destTileHeight && x2-xMatches < destTileWidth)
-//      if (xMatches+xMin >= limit && y2<destTileHeight && x2-xMatches < destTileWidth)
-      {
-        if (x2-xMatches < 0)
-        {
-          xMatches = x2;
-        }
-        int offset = (y2 * destRowSize) + ((x2-xMatches) * 3);
-        BYTE *pDest3 = &pDest[offset];
-        BYTE *pSrc3 = &pSrcL2[offset];
-        int copySize;
-        if (x2+xLimit > destTileWidth)
-        {
-          copySize = (destTileWidth-(x2-xMatches)) * 3;
-        }
-        else
-        {
-          copySize = (xMatches+xMin) * 3;
-        }
-        BYTE *pSrcColEnd=&pSrc3[yLimit * destRowSize];
-        while (pSrc3 < pSrcColEnd)
-        {
-          memcpy(pDest3, pSrc3, copySize);
-          pSrc3 += destRowSize;
-          pDest3 += destRowSize;
-        }
-        xMatches = 0;
-      }
-      yMax++;
-      if ((yMin != yLimit || y2+yLimit>=tileHeight) && yMatches+yMin >= limit && x2<destTileWidth && y2-yMatches < destTileHeight)
-      //if (yMatches+yMin >= limit && x2<destTileWidth && y2-yMatches < destTileHeight)
-      {
-        if (y2-yMatches < 0)
-        {
-          yMatches = y2;
-        }
-        int offset = ((y2-yMatches) * destRowSize) + (x2 * 3);
-        BYTE *pDest3 = &pDest[offset];
-        int copySize = xLimit * 3;
-        BYTE *pSrc3 = &pSrcL2[offset];
-        int colEnd;
-        if (y2+yMin > destTileHeight)
-        {
-          colEnd=(destTileHeight-(y2-yMatches))*destRowSize;
-        }
-        else
-        {
-          colEnd=(yMatches+yMin)*destRowSize;
-        }
-        BYTE *pSrcColEnd=&pSrc3[colEnd];
-        if (pSrcColEnd > pSrcEnd)
-        {
-          pSrcColEnd = pSrcEnd;
-        }
-        else if (pSrcColEnd < pSrcEnd)
-        {
-          //std::cout << "I:" << (int) pSrcColEnd[0] << " " << (int) pSrcColEnd[1] << " " << (int) pSrcColEnd[2] << " ";
-          pDest3[colEnd] = 0;
-          pDest3[colEnd+1] = 0;
-          pDest3[colEnd+2] = 0;
-        }
-        //BYTE *pSrcEnd=&pSrcL2[destTileHeight * destTileWidth * 3];
-        while (pSrc3 < pSrcColEnd)
-        {
-          memcpy(pDest3, pSrc3, copySize);
-          pSrc3 += destRowSize;
-          pDest3 += destRowSize;
-        }
-        yMatches = 0;
-      }
-      xMatches += (xLimit - xMax);
-      yMatches += (yLimit - yMax);
-      if (y2 < destTileHeight && x2 < destTileWidth)
-      {
-        if (ySubSection < totalYSections)
-        {
-          ySubSections[ySubSection] = yMatches;
-        }
-        if (xSubSection < totalXSections)
-        {
-          xSubSections[xSubSection] = xMatches;
-        }
-      }
-      x2 += xLimit;
     }
-  }
-  /*
-  for (int x2=0; x2 < tileWidth; x2 += limit)
-  {
-    int ySubSection = x / limit;
-    int yMatches = ySubSections[ySubSection];
-    int xLimit = limit;
-    if (x2 + limit > tileWidth) xLimit = tileWidth - x2;
-    int y2=0;
-    while (y2 < tileHeight)
-    {
-      int yLimit = limit;
-      if (y2 + limit > tileHeight) yLimit = tileHeight - y2;
-      BYTE *pDest2 = &pDest[(y2 * rowSize) + (x2 * 3)];
-      int yMin = yLimit;
-      int yMax = -1;
-      BYTE *pDestSubTileEnd = &pDest2[xLimit * 3];
-      while (pDest2 < pDestSubTileEnd)
-      {
-        BYTE *pDest3 = pDest2;
-        BYTE *pDestColEnd = &pDest2[yLimit * rowSize];
-        int y3=0;
-        while (pDest3 < pDestColEnd)
-        {
-          if (*pDest3 < bkgdColor || pDest3[1] < bkgdColor || pDest3[2] < bkgdColor)
-          {
-            if (y3 < yMin)
-            {
-              yMin = y3;
-            }
-            if (y3 > yMax)
-            {
-              yMax = y3;
-            }
-          }
-          pDest3 += rowSize;
-          y3++;
-        }
-        pDest2 += 3;
-      }
-      yMax++;
-      if ((yMax != 0 || y2+yLimit>=tileHeight) && yMatches+yMin >= limit)
-      {
-        if (y2-yMatches < 0)
-        {
-          yMatches = y2;
-        }
-        int offset = ((y2-yMatches) * rowSize) + (x2 * 3);
-        BYTE *pDest3 = &pDest[offset];
-        int copySize = xLimit * 3;
-        BYTE *pSrc3 = &pSrc[offset];
-        BYTE *pSrcColEnd=&pSrc3[(yMatches+yLimit)*rowSize];
-        while (pSrc3 < pSrcColEnd)
-        {
-          memcpy(pDest3, pSrc3, copySize);
-          pSrc3 += rowSize;
-          pDest3 += rowSize;
-        }
-        yMatches = 0;
-      }
-      yMatches += (yLimit - yMax);
-      y2 += yLimit;
-    }
-    ySubSections[ySubSection] = yMatches;
-  }
-  */
-}
-
-/*
-void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, int tileWidth, int tileHeight, int limit, BYTE bkgdColor)
-{
-  int rowSize=tileWidth * 3;
-  for (int y = 0; y < tileHeight; y += limit)
-  {
-    int xCount=0;
-    bool xMatch = false;
-    BYTE *pDest2 = &pDest[y * rowSize];
-    BYTE *pDestRowEnd = &pDest2[rowSize];
-    BYTE *pSrc2 = &pSrc[y * rowSize];
-    while (pDest2 < pDestRowEnd)
-    {
-      if (*pDest2 >= bkgdColor && pDest2[1] >= bkgdColor && pDest2[2] >= bkgdColor)
-      {
-        xCount++;
-        if (setBkgd == false && xCount >= limit)
-        {
-          setBkgd = true;
-          BYTE *pDest3 = pDest2 - ((xCount-1) * 3);
-          BYTE *pSrc3 = pSrc2 - ((xCount-1) * 3);
-          while (pDest3 < pDest2)
-          {
-            *pDest3 = *pSrc3;
-            pDest3[1] = pSrc3[1];
-            pDest3[2] = pSrc3[2];
-            pDest3 += 3;
-            pSrc3 += 3;
-          }
-        }
-        if (setBkgd)
-        {
-          *pDest2 = *pSrc2;
-          pDest2[1] = pSrc2[1];
-          pDest2[2] = pSrc2[2];
-        } 
-      }
-      else
-      {
-        setBkgd = false;
-        xCount = 0;
-      }
-      pDest2 += 3;
-      pSrc2 += 3;
-    }
-  }
-
-  for (int x = 0; x < tileWidth; x++)
-  {
-    int yCount=0;
-    bool setBkgd = false;
-    BYTE *pDest2 = &pDest[x * 3];
-    BYTE *pDestColEnd = &pDest2[tileHeight * rowSize];
-    BYTE *pSrc2 = &pSrc[x * 3];
-    while (pDest2 < pDestColEnd)
-    {
-      if (*pDest2 >= bkgdColor && pDest2[1] >= bkgdColor && pDest2[2] >= bkgdColor)
-      {
-        yCount++;
-        if (setBkgd == false && yCount >= limit)
-        {
-          setBkgd = true;
-          BYTE *pDest3 = pDest2 - ((yCount-1) * rowSize);
-          BYTE *pSrc3 = pSrc2 - ((yCount-1) * rowSize);
-          while (pDest3 < pDest2)
-          {
-            *pDest3 = *pSrc3;
-            pDest3[1] = pSrc3[1];
-            pDest3[2] = pSrc3[2];
-            pDest3 += rowSize;
-            pSrc3 += rowSize;
-          }
-        }
-        if (setBkgd)
-        {
-          *pDest2 = *pSrc2;
-          pDest2[1] = pSrc2[1];
-          pDest2[2] = pSrc2[2];
-        } 
-      }
-      else
-      {
-        setBkgd = false;
-        yCount = 0;
-      }
-      pDest2 += rowSize;
-      pSrc2 += rowSize;
-    }
+    y++;
+    row++;
   }
 }
-*/
 
 
 bool drawXHighlight(BYTE *pBmp, int samplesPerPixel, int64_t y1, int64_t x1, int64_t x2, int64_t width, int64_t height, int thickness, int position)

@@ -106,8 +106,8 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   int scaleMethod=cv::INTER_CUBIC;
   int scaleMethodL2=cv::INTER_CUBIC;
   int64_t totalXSections=0, totalYSections=0;
-  int16_t *xSubSections=NULL;
-  int16_t *ySubSections=NULL;
+  bool *xSubSections=NULL;
+  bool *ySubSections=NULL;
 
   if (mBlendByRegion)
   {
@@ -223,17 +223,17 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
       output << "Out of memory allocating final tile bitmap. Cannot finish scaling!" << std::endl;
       return 1;
     }
-    totalXSections = (int64_t) ceil((double) outputHeight / (double) bkgdLimit)+1;
-    totalYSections = (int64_t) ceil((double) destTotalWidth / (double) bkgdLimit)+1;
-    xSubSections=new int16_t[totalXSections];
-    ySubSections=new int16_t[totalYSections];
+    totalXSections = (int64_t) ceil((double) destTotalWidth / (double) outputWidth)*outputWidth;
+    totalYSections = (int64_t) ceil((double) destTotalHeight / (double) outputHeight)*outputHeight;
+    xSubSections=new bool[totalXSections];
+    ySubSections=new bool[totalYSections];
     if (xSubSections == NULL || ySubSections == NULL)
     {
       output << "Out of memory tile subsections. Cannot finish scaling!" << std::endl;
       return 1;
     } 
-    memset(xSubSections, 0, totalXSections * sizeof(int16_t));
-    memset(ySubSections, 0, totalYSections * sizeof(int16_t));
+    memset(xSubSections, 0, totalXSections);
+    memset(ySubSections, 0, totalYSections);
   }
   *logFile << " xScale=" << xScale << " yScale=" << yScale;
   *logFile << " srcTotalWidth=" << srcTotalWidth << " srcTotalHeight=" << srcTotalHeight;
@@ -261,7 +261,7 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
     oss << "|OffsetZ = " << (mZSteps-1) << "\0";
   }
   std::string strAttributes=oss.str();
-  if (tif->setAttributes(3, 8, destTotalWidth, destTotalHeight, outputWidth, outputHeight, 1, quality)==false || tif->setDescription(strAttributes, mBaseTotalWidth, mBaseTotalHeight)==false)
+  if (tif->setAttributes(3, 8, destTotalWidth, destTotalHeight, (tiled==true ? outputWidth : 0), (tiled==true ? outputHeight : 0), 1, quality)==false || tif->setDescription(strAttributes, mBaseTotalWidth, mBaseTotalHeight)==false)
   {
     std::string errMsg;
     tif->getErrMsg(errMsg);
