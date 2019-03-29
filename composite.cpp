@@ -1630,66 +1630,106 @@ void CompositeSlide::blendLevelsByRegion(BYTE *pDest, BYTE *pSrc, int64_t x, int
 }
 
 
-void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t y, int tileWidth, int tileHeight, int limit, bool *freeXMap, int64_t totalXMap, bool *freeYMap, int64_t totalYMap, BYTE bkgdColor, bool tiled)
+void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t y, int tileWidth, int tileHeight, int limit, uint8_t *freeXMap, int64_t totalXMap, bool *freeYMap, int64_t totalYMap, BYTE bkgdColor, bool tiled)
 {
   int destTileWidth=tileWidth;
   if (tiled) destTileWidth -= limit;
   int destTileHeight=tileHeight;
   if (tiled) destTileHeight -= limit;
-  int64_t yEnd = y+destTileHeight;
-  int64_t xEnd = x+destTileWidth;
-  if (destTileWidth <= 0 || tileWidth <= 0 || destTileHeight <= 0 || tileHeight <= 0 || limit < 0 || xEnd > totalXMap || yEnd > totalYMap) return;
+  if (destTileWidth <= 0 || tileWidth <= 0 || destTileHeight <= 0 || tileHeight <= 0 || limit < 0 || y+destTileWidth > totalXMap || y+destTileHeight > totalYMap) return;
   int srcRowSize = tileWidth * 3;
   int destRowSize = destTileWidth * 3;
-  register int row = 0;
-  while (y < yEnd)
+  int64_t y2 = 0;
+  while (y2 < tileHeight)
   {
-    register int64_t x2 = x;
-    register BYTE *pSrcB = &pSrc[row * srcRowSize];
-    register BYTE *pDestB = &pDest[row * destRowSize];
-    register BYTE *pSrcL2B = &pSrcL2[row * destRowSize];
-    while (x2 < xEnd)
+    int64_t x2 = 0;
+    BYTE *pSrcB = &pSrc[y2 * srcRowSize];
+    BYTE *pDestB = &pDest[y2 * destRowSize];
+    BYTE *pSrcL2B = &pSrcL2[y2 * destRowSize];
+    while (x2 < tileWidth)
     {
-      if (*pSrcB >= bkgdColor && pSrcB[1] >= bkgdColor && pSrcB[2] >= bkgdColor           && (x2==0 || y==0 || freeYMap[y]==true || freeXMap[x2]==true))
+      uint8_t freeX = freeXMap[x+x2];
+      uint8_t freeY = freeYMap[y+y2];
+      if (*pSrcB >= bkgdColor && pSrcB[1] >= bkgdColor && pSrcB[2] >= bkgdColor)
       {
-        *pDestB = *pSrcL2B;
-        pDestB[1] = pSrcL2B[1];
-        pDestB[2] = pSrcL2B[2];
-        freeXMap[x2]=true;
-        freeYMap[y]=true;
+        if (x2 >= limit || x <= limit) freeX++;
+        if (y2 >= limit || y <= limit) freeY++;
+        if (freeX==limit && x2-limit < destTileWidth)
+        {
+          int backX = freeX;
+          if (x2-freeX<0)
+          {
+            backX = x2;
+          }
+          int copyX = backX;
+          if (x2 > destTileWidth)
+          {
+            copyX = destTileWidth - (x2 - backX);
+          }
+          BYTE *pDestC = pDestB - (copyX * 3);
+          BYTE *pDestD = pDest
+          for ( pDestC < pDestD; pDestC += 3)
+          {
+            *pDestC = 255;
+            pDestC[1] = 0;
+            pDestC[2] = 0;
+          }
+          //memcpy(pDestB, pSrcB - copyX, copyX);
+        }
+        if (freeY==limit && y2 < destTileHeight)
+        {
+          int copyY = freeY;
+          if (y2-freeY<0)
+          {
+            copyY = y2;
+          }
+          BYTE *pDestC = pDestB - (copyY * destRowSize);
+          BYTE *pSrcL2C = &pSrcL2B;
+          for (int y3 = y2 - copyY; y3 <= y2; y3++)
+          {
+            *pDestC = 255;
+            pDestC[1] = 0;
+            pDestC[2] = 0;
+            pDestC += destRowSize;
+          }
+        }
+        if (freeX > limit || freeY > limit)
+        {
+          if (freeY > limit)
+          {
+            freeY = limit + 1;
+          }
+          if (freeX > limit)
+          {
+            freeX = limit + 1;
+          }
+          if (x2 < destTileWidth && y2 < destTileHeight)
+          {
+            *pDestB = 255;
+            pDestB[1] = 0;
+            pDestB[2] = 0;
+          }
+        }
       }
       else 
       {
-        *pDestB = *pSrcB;
-        pDestB[1] = pSrcB[1];
-        pDestB[2] = pSrcB[2];
-        freeXMap[x2]=false;
-        freeYMap[y]=false;
+        if (x2 < destTileWidth && y2 < destTileHeight)
+        {
+          *pDestB = *pSrcB;
+          pDestB[1] = pSrcB[1];
+          pDestB[2] = pSrcB[2];
+        }
+        freeX = 0;
+        freeY = 0;
       }
+      freeXMap[x+x2]=xFree;
+      freeYMap[y+y2]=yFree;
       pDestB += 3;
       pSrcB += 3;
       pSrcL2B += 3;
       x2++;
     }
-    while (x2 > x)
-    {
-      pDestB -= 3;
-      pSrcB -= 3;
-      pSrcL2B -= 3;
-      x2--;
-      if (*pSrcB >= bkgdColor && pSrcB[1] >= bkgdColor && pSrcB[2] >= bkgdColor
-      
-          && (x2+1==xEnd || y==0 || freeYMap[y]==true || freeXMap[x2]==true))
-      {
-        *pDestB = *pSrcL2B;
-        pDestB[1] = pSrcL2B[1];
-        pDestB[2] = pSrcL2B[2];
-        freeXMap[x2]=true;
-        freeYMap[y]=true;
-      }
-    }
-    y++;
-    row++;
+    y2++;
   }
 }
 
