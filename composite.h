@@ -210,7 +210,7 @@ public:
 
 };
 
-void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t y, int tileWidth, int tileHeight, int limit, bool *freeXMap, int64_t totalXMap, bool *freeYMap, int64_t totalYMap, BYTE bkgdColor, bool tiled);
+void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t y, int tileWidth, int tileHeight, int64_t rowWidth, uint8_t limit, uint8_t *xFreeMap, int64_t totalXMap, uint8_t *yFreeMap, int64_t totalYMap, BYTE bkgdColor, bool tiled);
 
 
 

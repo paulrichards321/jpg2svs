@@ -84,7 +84,7 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   int64_t srcTotalHeightL2=1;
   int64_t destTotalWidth=0;
   int64_t destTotalHeight=0;
-  const int bkgdLimit=16;
+  const int bkgdLimit=32;
   int outputWidth=256;
   int outputHeight=256;
   int inputTileWidth=256+bkgdLimit;
@@ -106,8 +106,8 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   int scaleMethod=cv::INTER_CUBIC;
   int scaleMethodL2=cv::INTER_CUBIC;
   int64_t totalXSections=0, totalYSections=0;
-  bool *xSubSections=NULL;
-  bool *ySubSections=NULL;
+  uint8_t *xSubSections=NULL;
+  uint8_t *ySubSections=NULL;
 
   if (mBlendByRegion)
   {
@@ -223,10 +223,10 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
       output << "Out of memory allocating final tile bitmap. Cannot finish scaling!" << std::endl;
       return 1;
     }
-    totalXSections = (int64_t) ceil((double) destTotalWidth / (double) outputWidth)*outputWidth;
+    totalXSections = (int64_t) (ceil((double) destTotalWidth / (double) outputWidth)*outputWidth) * 2;
     totalYSections = (int64_t) ceil((double) destTotalHeight / (double) outputHeight)*outputHeight;
-    xSubSections=new bool[totalXSections];
-    ySubSections=new bool[totalYSections];
+    xSubSections=new uint8_t[totalXSections];
+    ySubSections=new uint8_t[totalYSections];
     if (xSubSections == NULL || ySubSections == NULL)
     {
       output << "Out of memory tile subsections. Cannot finish scaling!" << std::endl;
@@ -403,7 +403,7 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
             }
             else
             {
-              blendLevelsByBkgd(pBitmap4, pBitmap2, imgScaled2.data, xDest, yDest, inputTileWidth, inputTileHeight, bkgdLimit, xSubSections, totalXSections, ySubSections, totalYSections, 245, tiled);
+              blendLevelsByBkgd(pBitmap4, pBitmap2, imgScaled2.data, xDest, yDest, inputTileWidth, inputTileHeight, totalXSections / 2, bkgdLimit, xSubSections, totalXSections, ySubSections, totalYSections, 245, tiled);
               pBitmapFinal = pBitmap4;
             }
           } 
