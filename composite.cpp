@@ -1630,7 +1630,7 @@ void CompositeSlide::blendLevelsByRegion(BYTE *pDest, BYTE *pSrc, int64_t x, int
 }
 
 
-void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t y, int tileWidth, int tileHeight, int64_t rowWidth, uint8_t limit, uint8_t *xFreeMap, int64_t totalXMap, uint8_t *yFreeMap, int64_t totalYMap, BYTE bkgdColor, bool tiled)
+void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t y, int tileWidth, int tileHeight, int64_t rowWidth, int16_t limit, int16_t *xFreeMap, int64_t totalXMap, int16_t *yFreeMap, int64_t totalYMap, BYTE bkgdColor, bool tiled)
 {
   int destTileWidth=tileWidth;
   if (tiled) destTileWidth -= limit;
@@ -1644,14 +1644,15 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
 //  BYTE *pSrcEnd = pSrc + srcSize;
   BYTE *pDestEnd = pDest + destSize;
   int64_t y2 = 0;
-  uint8_t yFree = 0;
+  int16_t yFree = 0;
   while (y2 < tileHeight)
   {
     int64_t x2 = 0;
     BYTE *pSrcB = &pSrc[y2 * srcRowSize];
     BYTE *pDestB = &pDest[y2 * destRowSize];
     BYTE *pSrcL2B = &pSrcL2[y2 * destRowSize];
-    uint8_t xFree = 0;
+    int16_t xFree = 0;
+    xFree = yFreeMap[y+y2];
     while (x2 < tileWidth)
     {
       bool setFree = false;
@@ -1663,18 +1664,87 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
       {
         yFree = xFreeMap[rowWidth+x+x2];
       }
-      if (x2 < destTileWidth) 
-      {
-        xFree = yFreeMap[y+y2];
-      }
       if (*pSrcB >= bkgdColor && pSrcB[1] >= bkgdColor && pSrcB[2] >= bkgdColor)
       {
         xFree++;
+        if (xFree > tileWidth) 
+        {
+          xFree = tileWidth;
+        }
         yFree++;
-        if (xFree==limit && x2-limit < destTileWidth)
+        if (yFree > tileHeight) 
+        {
+          yFree = tileHeight;
+        }
+        if (x2+1 == tileWidth && y2 < destTileHeight && 
+           (xFree >= limit || yFree >= limit))
+        {
+          int backX = xFree-1;
+          if (x2-backX<0)
+          {
+            backX = x2;
+          }
+          int copyX = backX+1;
+          if (x2 > destTileWidth)
+          {
+            copyX = (destTileWidth - (x2 - backX))+1;
+          }
+          if (copyX<=0)
+          {
+            backX=0;
+            copyX=0;
+          }
+          BYTE *pDestC = pDestB - (backX * 3);
+          BYTE *pDestD = pDestC + (copyX * 3);
+          BYTE *pSrcL2C = pSrcL2B - (backX * 3);
+          while (pDestC < pDestD && pDestC < pDestEnd)
+          {
+            *pDestC = *pSrcL2C;
+            pDestC[1] = pSrcL2C[1];
+            pDestC[2] = pSrcL2C[2];
+            pDestC += 3;
+            pSrcL2C += 3;
+          }
+          setFree = true;
+        }
+        if (y2+1 == tileHeight && x2 < destTileWidth &&
+           (xFree >= limit || yFree >= limit))
+        {
+          int backY = yFree-1;
+          if (y2-backY<0)
+          {
+            backY = y2;
+          }
+          int copyY = backY+1;
+          if (y2 > destTileHeight)
+          {
+            copyY = (destTileHeight - (y2 - backY))+1;
+          }
+          if (copyY<=0)
+          {
+            backY=0;
+            copyY=0;
+          }
+          BYTE *pDestC = pDestB - (backY * destRowSize);
+          BYTE *pDestD = pDestC + (copyY * destRowSize);
+          BYTE *pSrcL2C = pSrcL2B - (backY * destRowSize);
+          while (pDestC < pDestD && pDestC < pDestEnd)
+          {
+            *pDestC = *pSrcL2C;
+            pDestC[1] = pSrcL2C[1];
+            pDestC[2] = pSrcL2C[2];
+            pDestC += destRowSize;
+            pSrcL2C += destRowSize;
+          }
+          setFree = true;
+        }
+      }
+      else if (xFree >= limit || yFree >= limit)
+      {
+        if (x2-xFree < destTileWidth && y2 < destTileHeight)
         {
           int backX = xFree;
-          if (x2-xFree<0)
+          if (x2-backX<0)
           {
             backX = x2;
           }
@@ -1683,19 +1753,24 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
           {
             copyX = destTileWidth - (x2 - backX);
           }
+          if (copyX<=0)
+          {
+            backX=0;
+            copyX=0;
+          }
           BYTE *pDestC = pDestB - (backX * 3);
           BYTE *pDestD = pDestC + (copyX * 3);
+          BYTE *pSrcL2C = pSrcL2B - (backX * 3);
           while (pDestC < pDestD && pDestC < pDestEnd)
           {
-            *pDestC = 255;
-            pDestC[1] = 0;
-            pDestC[2] = 0;
+            *pDestC = *pSrcL2C;
+            pDestC[1] = pSrcL2C[1];
+            pDestC[2] = pSrcL2C[2];
             pDestC += 3;
+            pSrcL2C += 3;
           }
-          setFree = true;
-          //memcpy(pDestB, pSrcB - copyX, copyX);
         }
-        if (yFree==limit && y2-limit < destTileHeight && x2 < destTileWidth)
+        if (x2 < destTileWidth && y2-yFree < destTileHeight)
         {
           int backY = yFree;
           if (y2-yFree<0)
@@ -1707,51 +1782,41 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
           {
             copyY = destTileHeight - (y2 - backY);
           }
+          if (copyY<=0)
+          {
+            backY=0;
+            copyY=0;
+          }
           BYTE *pDestC = pDestB - (backY * destRowSize);
           BYTE *pDestD = pDestC + (copyY * destRowSize);
+          BYTE *pSrcL2C = pSrcL2B - (backY * destRowSize);
           while (pDestC < pDestD && pDestC < pDestEnd)
           {
-            *pDestC = 0;
-            pDestC[1] = 255;
-            pDestC[2] = 0;
+            *pDestC = *pSrcL2C;
+            pDestC[1] = pSrcL2C[1];
+            pDestC[2] = pSrcL2C[2];
             pDestC += destRowSize;
-          }
-          setFree = true;
-        }
-        if (x == 0 || y == 0 || xFree > limit || yFree > limit)
-        //if (x == 0 || y == 0 || xFree > limit || yFree > limit)
-        {
-          if (yFree > limit)
-          {
-            yFree = limit + 1;
-          }
-          if (xFree > limit)
-          {
-            xFree = limit + 1;
-          }
-          if (x2 < destTileWidth && y2 < destTileHeight && pDestB < pDestEnd)
-          {
-            *pDestB = 255;
-            pDestB[1] = 0;
-            pDestB[2] = 0;
-            setFree = true;
+            pSrcL2C += destRowSize;
           }
         }
+        xFree=0;
+        yFree=0;
       }
       else
       {
-        xFree = 0;
-        yFree = 0;
+        xFree=0;
+        yFree=0;
       }
       if (setFree==false && x2 < destTileWidth && y2 < destTileHeight && pDestB < pDestEnd)
       {
+        /*
+        *pDestB = 0;
+        pDestB[1] = 0;
+        pDestB[2] = 255;
+        */
         *pDestB = *pSrcB;
         pDestB[1] = pSrcB[1];
         pDestB[2] = pSrcB[2];
-      }
-      else
-      {
-        setFree=~setFree;
       }
       if (rowWidth+x+x2 < totalXMap)
       {

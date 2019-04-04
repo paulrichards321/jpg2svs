@@ -106,8 +106,8 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   int scaleMethod=cv::INTER_CUBIC;
   int scaleMethodL2=cv::INTER_CUBIC;
   int64_t totalXSections=0, totalYSections=0;
-  uint8_t *xSubSections=NULL;
-  uint8_t *ySubSections=NULL;
+  int16_t *xSubSections=NULL;
+  int16_t *ySubSections=NULL;
 
   if (mBlendByRegion)
   {
@@ -225,15 +225,15 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
     }
     totalXSections = (int64_t) (ceil((double) destTotalWidth / (double) outputWidth)*outputWidth) * 2;
     totalYSections = (int64_t) ceil((double) destTotalHeight / (double) outputHeight)*outputHeight;
-    xSubSections=new uint8_t[totalXSections];
-    ySubSections=new uint8_t[totalYSections];
+    xSubSections=new int16_t[totalXSections];
+    ySubSections=new int16_t[totalYSections];
     if (xSubSections == NULL || ySubSections == NULL)
     {
       output << "Out of memory tile subsections. Cannot finish scaling!" << std::endl;
       return 1;
     } 
-    memset(xSubSections, 0, totalXSections);
-    memset(ySubSections, 0, totalYSections);
+    memset(xSubSections, 0, totalXSections*sizeof(int16_t));
+    memset(ySubSections, 0, totalYSections*sizeof(int16_t));
   }
   *logFile << " xScale=" << xScale << " yScale=" << yScale;
   *logFile << " srcTotalWidth=" << srcTotalWidth << " srcTotalHeight=" << srcTotalHeight;
