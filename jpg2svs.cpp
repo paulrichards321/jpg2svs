@@ -84,15 +84,16 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   int64_t srcTotalHeightL2=1;
   int64_t destTotalWidth=0;
   int64_t destTotalHeight=0;
-  const int bkgdLimit=32;
   int outputWidth=256;
   int outputHeight=256;
-  int inputTileWidth=256+bkgdLimit;
-  int inputTileHeight=256+bkgdLimit;
   double xScale=0.0, yScale=0.0;
   double xScaleL2=0.0, yScaleL2=0.0;
   double xScaleReverse=0.0, yScaleReverse=0.0;
   double xScaleResize=0.0, yScaleResize=0.0;
+  int xBkgdLimit = 0;
+  int yBkgdLimit = 0;
+  int inputTileWidth=256;
+  int inputTileHeight=256;
   int64_t grabWidthA=0, grabWidthB=0;
   int64_t grabHeightA=0, grabHeightB=0;
   int64_t grabWidthL2=0, grabHeightL2=0;
@@ -154,6 +155,13 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
     yScale=(double) srcTotalHeight / (double) destTotalHeight;
     xScaleReverse=(double) destTotalWidth / (double) srcTotalWidth;
     yScaleReverse=(double) destTotalHeight / (double) srcTotalHeight;
+    if (mBlendByRegion==false)
+    {
+      xBkgdLimit = (int) ceil((double) 752 / (double) xScale);
+      yBkgdLimit = (int) ceil((double) 480 / (double) yScale);
+      inputTileWidth=256+xBkgdLimit;
+      inputTileHeight=256+yBkgdLimit;
+    }
     grabWidthA=(int64_t) srcTotalWidth;
     grabHeightA=(int64_t) srcTotalHeight;
     grabWidthB=(int64_t) srcTotalWidth;
@@ -178,6 +186,13 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
     yScale=1.0;
     xScaleReverse=1.0;
     yScaleReverse=1.0;
+    if (mBlendByRegion==false)
+    {
+      xBkgdLimit = (int) ceil((double) 752 / (double) xScale);
+      yBkgdLimit = (int) ceil((double) 480 / (double) yScale);
+      inputTileWidth=256+xBkgdLimit;
+      inputTileHeight=256+yBkgdLimit;
+    }
     grabWidthA=inputTileWidth;
     grabHeightA=inputTileHeight;
     grabWidthB=outputWidth;
@@ -200,6 +215,13 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
     yScale=(double) srcTotalHeight / (double) destTotalHeight;
     xScaleReverse=(double) destTotalWidth / (double) srcTotalWidth;
     yScaleReverse=(double) destTotalHeight / (double) srcTotalHeight;
+    if (mBlendByRegion==false)
+    {
+      xBkgdLimit = (int) ceil((double) 752 / (double) xScale);
+      yBkgdLimit = (int) ceil((double) 480 / (double) yScale);
+      inputTileWidth=256+xBkgdLimit;
+      inputTileHeight=256+yBkgdLimit;
+    }
     grabWidthA=(int64_t)ceil((double) inputTileWidth * xScale);
     grabHeightA=(int64_t)ceil((double) inputTileHeight * yScale);
     grabWidthB=(int64_t)ceil((double) outputWidth * xScale);
@@ -403,7 +425,7 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
             }
             else
             {
-              blendLevelsByBkgd(pBitmap4, pBitmap2, imgScaled2.data, xDest, yDest, inputTileWidth, inputTileHeight, totalXSections / 2, bkgdLimit, xSubSections, totalXSections, ySubSections, totalYSections, 245, tiled);
+              blendLevelsByBkgd(pBitmap4, pBitmap2, imgScaled2.data, xDest, yDest, inputTileWidth, inputTileHeight, totalXSections / 2, xBkgdLimit, yBkgdLimit, xSubSections, totalXSections, ySubSections, totalYSections, bkgColor, tiled);
               pBitmapFinal = pBitmap4;
             }
           } 
@@ -822,7 +844,7 @@ int main(int argc, char** argv)
   bool doBorderHighlight = true;
   bool includeZStack = false;
   int quality = 90;
-  char syntax[] = "syntax: jpg2svs -b=[on,off] -h=[on,off] -x=[bestXOffset] -y=[bestYOffset] -z=[on,off] <inputfolder> <outputfile> \nFlags:\t-b blend the top level with the middle level. Default on.\n\t-r blend the top level with the middle level only by region, not by empty background. Default off.\n\t-h highlight visible areas with a black border. Default on.\n\t-q Set minimal jpeg quality percentage. Default 90.\n\t-x and -y Optional: set best X, Y offset of image if upper and lower pyramid levels are not aligned.\n\t-z Process Z-stack if the image has one. Default off.\n";
+  char syntax[] = "syntax: jpg2svs -b=[on,off] -h=[on,off] -r=[on,off] -x=[bestXOffset] -y=[bestYOffset] -z=[on,off] <inputfolder> <outputfile> \nFlags:\t-b blend the top level with the middle level. Default on.\n\t-r Blend the top level with the middle level only by region, not by empty background, default off.\n\t-h highlight visible areas with a black border. Default on.\n\t-q Set minimal jpeg quality percentage. Default 90.\n\t-x and -y Optional: set best X, Y offset of image if upper and lower pyramid levels are not aligned.\n\t-z Process Z-stack if the image has one. Default off.\n";
 
   if (argc < 3)
   {

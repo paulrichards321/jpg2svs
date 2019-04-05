@@ -1630,13 +1630,13 @@ void CompositeSlide::blendLevelsByRegion(BYTE *pDest, BYTE *pSrc, int64_t x, int
 }
 
 
-void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t y, int tileWidth, int tileHeight, int64_t rowWidth, int16_t limit, int16_t *xFreeMap, int64_t totalXMap, int16_t *yFreeMap, int64_t totalYMap, BYTE bkgdColor, bool tiled)
+void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t y, int tileWidth, int tileHeight, int64_t rowWidth, int16_t xLimit, int16_t yLimit, int16_t *xFreeMap, int64_t totalXMap, int16_t *yFreeMap, int64_t totalYMap, BYTE bkgdColor, bool tiled)
 {
   int destTileWidth=tileWidth;
-  if (tiled) destTileWidth -= limit;
+  if (tiled) destTileWidth -= xLimit;
   int destTileHeight=tileHeight;
-  if (tiled) destTileHeight -= limit;
-  if (destTileWidth <= 0 || tileWidth <= 0 || destTileHeight <= 0 || tileHeight <= 0 || limit < 0 || x+destTileWidth > totalXMap || y+destTileHeight > totalYMap) return;
+  if (tiled) destTileHeight -= yLimit;
+  if (destTileWidth <= 0 || tileWidth <= 0 || destTileHeight <= 0 || tileHeight <= 0 || xLimit < 0 || yLimit < 0 || x+destTileWidth > totalXMap || y+destTileHeight > totalYMap) return;
   int srcRowSize = tileWidth * 3;
   int destRowSize = destTileWidth * 3;
 //  int srcSize = srcRowSize * tileHeight;
@@ -1677,7 +1677,7 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
           yFree = tileHeight;
         }
         if (x2+1 == tileWidth && y2 < destTileHeight && 
-           (xFree >= limit || yFree >= limit))
+           (xFree >= xLimit || yFree >= yLimit))
         {
           int backX = xFree-1;
           if (x2-backX<0)
@@ -1708,7 +1708,7 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
           setFree = true;
         }
         if (y2+1 == tileHeight && x2 < destTileWidth &&
-           (xFree >= limit || yFree >= limit))
+           (xFree >= xLimit || yFree >= yLimit))
         {
           int backY = yFree-1;
           if (y2-backY<0)
@@ -1739,7 +1739,7 @@ void blendLevelsByBkgd(BYTE *pDest, BYTE *pSrc, BYTE *pSrcL2, int64_t x, int64_t
           setFree = true;
         }
       }
-      else if (xFree >= limit || yFree >= limit)
+      else if (xFree >= xLimit || yFree >= yLimit)
       {
         if (x2-xFree < destTileWidth && y2 < destTileHeight)
         {
