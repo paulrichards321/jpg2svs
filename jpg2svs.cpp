@@ -125,7 +125,7 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
   {
     return 0;
   }
-  if (mLastZLevel != zLevel || mLastDirection != direction)
+  if (mIncludeZStack && (mLastZLevel != zLevel || mLastDirection != direction))
   {
     mZSteps++;
     output << std::endl;
@@ -524,187 +524,43 @@ int SlideConvertor::outputLevel(int level, bool tiled, int direction, int zLevel
 
 int SlideConvertor::convert()
 {
-  //----------------------------------------------------------------------
-  // Below three blocks for blending the middle level into the top level
-  //----------------------------------------------------------------------
-  int smallBlendLevels[] =          {  0,  1,  1,   1,   1 };
-  int smallBlendMagnifyLevels[] =   {  1,  64,  4,  16,  32 };
-  int bigBlendLevels[] =            {  0,  1,  1,   1,   1,   1 };
-  int bigBlendMagnifyLevels[] =     {  1,  128,  4,  16,  64, 128 };
-  
-  int smallBlendZLevels1[] =        {  0,  1,  1,   1,   1 };
-  int smallBlendZMagnifyLevels1[] = {  1,  64,  4,  16,  32 };
-  int smallBlendZLevels2[] =        {  0,  1,  1,   1 };
-  int smallBlendZMagnifyLevels2[] = {  1,  4, 16,  32 };
-
-  int bigBlendZLevels1[] =          {  0,  1,  1,   1,   1,   1 };
-  int bigBlendZMagnifyLevels1[] =   {  1,  256,  4,  16,  64, 128 };
-  int bigBlendZLevels2[] =          {  0,  1,  1,   1,   1 };
-  int bigBlendZMagnifyLevels2[] =   {  1,  4, 16,  64, 128 };
-
-  //----------------------------------------------------------------------
-  // Below three blocks for NOT blending the middle level into the top level
-  //----------------------------------------------------------------------
-  int smallLevels[] =          {  0,  2,  1,   1,   2 };
-  int smallMagnifyLevels[] =   {  1,  64,  4,  16,  32 };
-  int bigLevels[] =            {  0,  3,  1,   1,   2,   2 };
-  int bigMagnifyLevels[] =     {  1,  1,  4,  16,  64, 128 };
-  
-  int smallZLevels1[] =        {  0,  2,  1,   1,   2 };
-  int smallZMagnifyLevels1[] = {  1,  64,  4,  16,  32 };
-  int smallZLevels2[] =        {  0,  1,  1,   2 };
-  int smallZMagnifyLevels2[] = {  1,  4, 16,  32 };
-
-  int bigZLevels1[] =          {  0,  2,  1,   1,   2,   2 };
-  int bigZMagnifyLevels1[] =   {  1,  256,  4,  16,  64, 128 };
-  int bigZLevels2[] =          {  0,  1,  1,   2,   2 };
-  int bigZMagnifyLevels2[] =   {  1,  4, 16,  64, 128 };
-
-  int *levels1, *levels2, *magnifyLevels1, *magnifyLevels2;
-  int totalLevels1, totalLevels2;
-  
   int error = 0;
-  bool tiled = true;
-
   if (mValidObject == false) return 1;
  
-  if (slide->getTotalZLevels()==0 || mIncludeZStack==false)
+  int maxDivider=128;
+  while (maxDivider > 16 && (mBaseTotalWidth / maxDivider < 2000 && mBaseTotalHeight / maxDivider < 2000)) 
   {
-    if (mBaseTotalWidth >= 140000 || mBaseTotalHeight >= 140000)
-    {
-      totalLevels1 = 6;
-      if (mBlendTopLevel)
-      {
-        levels1 = bigBlendLevels;
-        magnifyLevels1 = bigBlendMagnifyLevels;
-      }
-      else
-      {
-        levels1 = bigLevels;
-        magnifyLevels1 = bigMagnifyLevels;
-      }
-    }
-    else
-    {
-      totalLevels1 = 5;
-      if (mBlendTopLevel)
-      {
-        levels1 = smallBlendLevels;
-        magnifyLevels1 = smallBlendMagnifyLevels;
-      }
-      else
-      {
-        levels1 = smallLevels;
-        magnifyLevels1 = smallMagnifyLevels;
-      }
-    }
-    //****************************************************************
-    // Output the base level, thumbnail, 4x, 16x, and 32x levels 
-    //****************************************************************
-    for (int step = 0; step < totalLevels1 && error==0; step++)
-    {
-      tiled = (step == 1 ? false : true);
-      error=outputLevel(levels1[step], tiled, 0, 0, magnifyLevels1[step]);
-    }
-  }
+    maxDivider /= 2;
+  }; 
   //****************************************************************
-  // Check if slide has more than one Z-Level 
+  // Output the base level, thumbnail, 4x, 16x, and 32x levels 
   //****************************************************************
-  else if (slide->getTotalZLevels() > 0)
+  int divider = 1;
+  for (int step = 1; divider != maxDivider && error==0; step++)
   {
-    if (mBaseTotalWidth >= 140000 || mBaseTotalHeight >= 140000)
+    bool tiled = true;
+    int olympusLevel = 1;
+    switch (step)
     {
-      totalLevels1 = 6;
-      totalLevels2 = 5;
-      if (mBlendTopLevel)
-      {
-        levels1 = bigBlendZLevels1;
-        levels2 = bigBlendZLevels2;
-        magnifyLevels1 = bigBlendZMagnifyLevels1;
-        magnifyLevels2 = bigBlendZMagnifyLevels2;
-      }
-      else
-      {
-        levels1 = bigZLevels1;
-        levels2 = bigZLevels2;
-        magnifyLevels1 = bigZMagnifyLevels1;
-        magnifyLevels2 = bigZMagnifyLevels2;
-      }
+      case 1:
+        divider = 1;
+        olympusLevel = 0; 
+        break;
+      case 2:
+        divider = maxDivider * 2;
+        tiled = false;
+        break;
+      case 3:
+        divider = 4;
+        break;
+      case 4:
+        divider = 16;
+        break;
+      case 5:
+        divider = maxDivider;
+        break;
     }
-    else
-    {
-      if (mBlendTopLevel)
-      {
-        totalLevels1 = 5;
-        totalLevels2 = 4;
-        levels1 = smallBlendZLevels1;
-        levels2 = smallBlendZLevels2;
-        magnifyLevels1 = smallBlendZMagnifyLevels1;
-        magnifyLevels2 = smallBlendZMagnifyLevels2;
-      }
-      else
-      {
-        totalLevels1 = 5;
-        totalLevels2 = 4;
-        levels1 = smallZLevels1;
-        levels2 = smallZLevels2;
-        magnifyLevels1 = smallZMagnifyLevels1;
-        magnifyLevels2 = smallZMagnifyLevels2;
-      }
-    }
-    int totalBottomZLevels = slide->getTotalBottomZLevels();
-    int totalTopZLevels = slide->getTotalTopZLevels();
-    int firstDirection;
-    int bottomLevel;
-    if (totalBottomZLevels == 0)
-    {
-      firstDirection=0; // no bottom levels do the base level first
-      bottomLevel=0;
-    }
-    else
-    {
-      firstDirection=1; // do the first bottom Z-level first if it exists
-
-      bottomLevel=totalBottomZLevels-1;
-    }
-    //****************************************************************
-    // Output the first bottom Z-level plus the slide thumbnail
-    //****************************************************************
-    for (int step=0; step < totalLevels1 && error==0; step++)
-    {
-      tiled = (step == 1 ? false : true);
-      error=outputLevel(levels1[step], tiled, firstDirection, bottomLevel, magnifyLevels1[step]);
-    }
-    //****************************************************************
-    // Output the next three bottom levels
-    //****************************************************************
-    for (int zLevel = bottomLevel-1; zLevel >= 0; zLevel--)
-    {
-      for (int step=0; step < totalLevels2 && error==0; step++)
-      {
-        tiled = (step == 1 ? false : true);
-        error=outputLevel(levels2[step], tiled, 1, zLevel, magnifyLevels2[step]);
-      }
-    }
-    //****************************************************************
-    // Output the base (middle) level
-    //****************************************************************
-    for (int step=0; step < totalLevels2 && error==0 && firstDirection != 0; step++)
-    {
-      tiled = (step == 1 ? false : true);
-      error=outputLevel(levels2[step], tiled, 0, 0, magnifyLevels2[step]);
-    }
-    //****************************************************************
-    // Output the last four upper levels
-    //****************************************************************
-    for (int zLevel = 0; zLevel < totalTopZLevels; zLevel++)
-    {
-      for (int step=0; step < totalLevels2 && error==0; step++)
-      {
-        tiled = (step == 1 ? false : true);
-        error=outputLevel(levels2[step], tiled, 2, zLevel, magnifyLevels2[step]);
-      }
-    }
+    error=outputLevel(olympusLevel, tiled, 0, 0, divider);
   }
   std::cout << std::endl << "All Levels Completed." << std::endl;
   return error;
@@ -841,10 +697,10 @@ int main(int argc, char** argv)
   int64_t bestXOffset = -1, bestYOffset = -1;
   bool blendTopLevel = true;
   bool blendByRegion = false;
-  bool doBorderHighlight = true;
+  bool doBorderHighlight = false;
   bool includeZStack = false;
   int quality = 90;
-  char syntax[] = "syntax: jpg2svs -b=[on,off] -h=[on,off] -r=[on,off] -x=[bestXOffset] -y=[bestYOffset] -z=[on,off] <inputfolder> <outputfile> \nFlags:\t-b blend the top level with the middle level. Default on.\n\t-r Blend the top level with the middle level only by region, not by empty background, default off.\n\t-h highlight visible areas with a black border. Default on.\n\t-q Set minimal jpeg quality percentage. Default 90.\n\t-x and -y Optional: set best X, Y offset of image if upper and lower pyramid levels are not aligned.\n\t-z Process Z-stack if the image has one. Default off.\n";
+  char syntax[] = "syntax: jpg2svs -b=[on,off] -h=[on,off] -r=[on,off] -x=[bestXOffset] -y=[bestYOffset] -z=[on,off] <inputfolder> <outputfile> \nFlags:\t-b blend the top level with the middle level. Default on.\n\t-r Blend the top level with the middle level only by region, not by empty background, default off.\n\t-h highlight visible areas with a black border. Default off.\n\t-q Set minimal jpeg quality percentage. Default 90.\n\t-x and -y Optional: set best X, Y offset of image if upper and lower pyramid levels are not aligned.\n\t-z Process Z-stack if the image has one. Default off.\n";
 
   if (argc < 3)
   {
@@ -853,31 +709,39 @@ int main(int argc, char** argv)
   }
   int opt;
   bool invalidOpt = false;
+  char emptyString[] = "";
   while((opt = getopt(argc, argv, "b:h:r:q:x:y:z:")) != -1)
   {
-    if (optarg != NULL) std::cout << " optarg=" << optarg << std::endl;
+    if (optarg == NULL) optarg = emptyString;
     switch (opt)
     {
       case 'b':
         blendTopLevel = getBoolOpt(optarg, invalidOpt);
+        std::cout << "Set blend top level: " << blendTopLevel << "." << std::endl;
         break;
       case 'h':
         doBorderHighlight = getBoolOpt(optarg, invalidOpt);
+        std::cout << "Set border highlight: " << doBorderHighlight << "." << std::endl;
         break;
       case 'r':
         blendByRegion = getBoolOpt(optarg, invalidOpt);
+        std::cout << "Set blend by region: " << blendByRegion << "." << std::endl;
         break;
       case 'q':
         quality = getIntOpt(optarg, invalidOpt);
+        std::cout << "Set quality: " << quality << "." << std::endl;
         break;
       case 'x':
         bestXOffset = getIntOpt(optarg, invalidOpt);
+        std::cout << "Set bestXOffset: " << bestXOffset << "." << std::endl;
         break;
       case 'y':
         bestYOffset = getIntOpt(optarg, invalidOpt);
+        std::cout << "Set bestYOffset: " << bestYOffset << "." << std::endl;
         break;
       case 'z':
         includeZStack = getBoolOpt(optarg, invalidOpt);
+        std::cout << "Set include Z stack: " << includeZStack << "." << std::endl;
         break;
       case '?':
         if (infile.length() == 0)
